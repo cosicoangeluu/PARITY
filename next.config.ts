@@ -1,9 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    serverActions: {
+      // A long receipt is up to 6 photos, each compressed to under 1 MB.
+      bodySizeLimit: "8mb",
+    },
+  },
   turbopack: {
     rules: {
       "*.css": {

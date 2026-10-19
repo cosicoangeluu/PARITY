@@ -1,0 +1,49 @@
+name: Weekly database backup
+
+# The free Supabase plan has no automatic backups. This dumps the database every week and
+# commits it to a separate PRIVATE repository, keeping the last 12 backups.
+# Needs repository secrets:
+#   SUPABASE_DB_URL  Supabase → Project Settings → Database → Connection string (Session pooler, URI)
+#   BACKUP_REPO      e.g. your-name/parity-backups (create it as a private repo)
+#   BACKUP_TOKEN     fine-grained personal access token with Contents: read/write on BACKUP_REPO
+
+on:
+  schedule:
+    - cron: "41 18 * * 0" # Monday 02:41 Manila time
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Dump the database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
+            --schema=public --no-owner --no-privileges \
+            | gzip -9 > "parity-$(date -u +%Y-%m-%d).sql.gz"
+          ls -lh parity-*.sql.gz
+
+      - name: Commit to the backup repository
+        env:
+          BACKUP_REPO: ${{ secrets.BACKUP_REPO }}
+          BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${BACKUP_TOKEN}@github.com/${BACKUP_REPO}.git" backups
+          mkdir -p backups/db
+          mv parity-*.sql.gz backups/db/
+          cd backups
+          ls -1t db/*.sql.gz | tail -n +13 | xargs -r git rm -q
+          git config user.name "parity-backup"
+          git config user.email "parity-backup@users.noreply.github.com"
+          git add db
+          git commit -m "Database backup $(date -u +%Y-%m-%d)" || echo "Nothing new"
+          git push

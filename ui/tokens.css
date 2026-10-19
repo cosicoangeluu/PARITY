@@ -1,0 +1,37 @@
+/* Parity design tokens. Source of truth: DESIGN.md section 3. No raw hex values in components. */
+:root {
+  --ink: #10202e;
+  --paper: #f5f6f1;
+  --intro-paper: #eae6da;
+  --mint: #2bc59a;
+  --mint-dark: #0b7a5e;
+  --mint-soft: #e3f5ee;
+  --coral: #f06a43;
+  --coral-dark: #d9532c;
+  --coral-soft: #fde8e1;
+  --lavender: #b9c4f5;
+  --text-on-dark: #f5f6f1;
+  --muted-on-dark: #c9d3dc;
+  --subtle-on-dark: #9aa8b5;
+  --text-on-light: #10202e;
+  --muted-on-light: #5b6875;
+  --line-light: #e1e5da;
+  --dashed-light: #b5bdae;
+  --glass-fill: rgba(245, 246, 241, 0.08);
+  --glass-line: rgba(245, 246, 241, 0.18);
+  --outline-on-dark: rgba(245, 246, 241, 0.3);
+
+  --font-display: var(--font-bricolage), "Bricolage Grotesque", sans-serif;
+  --font-body: var(--font-geist), "Geist", system-ui, sans-serif;
+
+  --radius-mark: 30%;
+  --radius-card: 22px;
+  --radius-input: 14px;
+  --radius-pill: 999px;
+  --shadow-card: 0 24px 60px rgba(0, 0, 0, 0.35);
+  --shadow-pill: 0 18px 40px rgba(0, 0, 0, 0.3);
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-window: cubic-bezier(0.76, 0, 0.24, 1);
+}

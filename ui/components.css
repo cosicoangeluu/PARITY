@@ -1,0 +1,206 @@
+/* Parity component styles. Source of truth: DESIGN.md section 7. */
+
+.stage {
+  position: relative;
+  min-height: 100dvh;
+  background: var(--ink);
+  color: var(--text-on-dark);
+  isolation: isolate;
+}
+
+.orb {
+  position: absolute;
+  width: 95vmax;
+  height: 95vmax;
+  bottom: -68vmax;
+  border-radius: 50%;
+  filter: blur(30px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.orb-mint {
+  left: calc(38% - 47.5vmax);
+  background: radial-gradient(
+    circle at 50% 35%,
+    rgba(43, 197, 154, 0.55) 0%,
+    rgba(43, 197, 154, 0.18) 38%,
+    rgba(43, 197, 154, 0) 62%
+  );
+  animation: driftA 14s ease-in-out infinite;
+}
+.orb-coral {
+  left: calc(62% - 47.5vmax);
+  background: radial-gradient(
+    circle at 50% 35%,
+    rgba(240, 106, 67, 0.55) 0%,
+    rgba(240, 106, 67, 0.18) 38%,
+    rgba(240, 106, 67, 0) 62%
+  );
+  animation: driftB 16s ease-in-out infinite;
+}
+
+.card {
+  background: #fff;
+  color: var(--text-on-light);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.glass {
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-line);
+  color: var(--text-on-dark);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.badge-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--mint-dark);
+  background: var(--mint-soft);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.chip-glass {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-line);
+  font-size: 14px;
+  color: var(--muted-on-dark);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: var(--radius-pill);
+  background: rgba(245, 246, 241, 0.06);
+  border: 1px solid var(--outline-on-dark);
+  color: var(--text-on-dark);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+.btn-outline-light {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  border: 1px solid #c9cfc2;
+  color: var(--text-on-light);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+.btn-ink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+.btn-danger-text {
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--coral-dark);
+  font-weight: 600;
+  font-size: 14px;
+  background: none;
+  cursor: pointer;
+}
+button:disabled,
+.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-on-light);
+}
+.input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--line-light);
+  border-radius: var(--radius-input);
+  background: #fff;
+  color: var(--text-on-light);
+  font: 400 16px / 1.4 var(--font-body);
+}
+.input:focus-visible,
+.btn-outline:focus-visible,
+.btn-ink:focus-visible,
+.btn-outline-light:focus-visible,
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 2px;
+}
+
+.row-dashed {
+  border: 1px dashed var(--dashed-light);
+  border-radius: var(--radius-pill);
+  padding: 3px 9px;
+  font-size: 13px;
+}
+
+.money {
+  font-variant-numeric: tabular-nums;
+}
+.display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.tab-dot::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mint);
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.form-error {
+  color: var(--coral-dark);
+  font-size: 14px;
+  font-weight: 500;
+}
+.form-error-dark {
+  color: #ffb39b;
+  font-size: 14px;
+  font-weight: 500;
+}

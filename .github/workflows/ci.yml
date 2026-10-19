@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint and format
+        run: npx biome ci .
+      - name: Route types
+        run: npx next typegen
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Money math tests
+        run: npx vitest run
+      - name: Production build
+        run: npx next build

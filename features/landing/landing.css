@@ -1,0 +1,115 @@
+/* Landing intro and hero. Timeline: DESIGN.md section 4. */
+
+.landing {
+  /* Hero delays are written relative to this; returning visitors skip the intro. */
+  --intro-offset: 3.3s;
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--intro-paper);
+}
+html[data-intro="skip"] .landing {
+  --intro-offset: 0s;
+}
+html[data-intro="skip"] .intro {
+  display: none;
+}
+html[data-intro="skip"] .landing-stage {
+  opacity: 1;
+  clip-path: none;
+  animation: none;
+}
+html[data-intro="skip"] .landing-glow {
+  opacity: 1;
+  animation: none;
+}
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  animation: hide 0.3s linear 2.6s forwards;
+}
+.intro-mark {
+  position: absolute;
+  left: calc(50% - 40px);
+  top: calc(50% - 40px);
+  animation: pop 0.7s var(--ease-out) 0.15s both;
+}
+.intro-bar-a {
+  animation:
+    barA 1s var(--ease-in-out) 0.9s both,
+    fadeOut 0.25s ease 2.15s forwards;
+}
+.intro-bar-b {
+  animation:
+    barB 1s var(--ease-in-out) 0.9s both,
+    fadeOut 0.25s ease 2.15s forwards;
+}
+.intro-word {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 60px);
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.32em;
+  color: var(--ink);
+  animation: fadeOut 0.35s ease 2.05s forwards;
+}
+.intro-letter {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(6px);
+  animation: letterIn 0.7s var(--ease-out) forwards;
+}
+
+.landing-stage {
+  /* Exactly the viewport, so the window opens from the mark's position on any screen. */
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--ink);
+  color: var(--text-on-dark);
+  opacity: 0;
+  clip-path: inset(calc(50% - 40px) calc(50% - 40px) round 24px);
+  animation:
+    show 0.01s linear 2.42s forwards,
+    open 1.2s var(--ease-window) 2.45s forwards;
+}
+.landing-glow {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  animation: show 1.6s ease 2.9s forwards;
+}
+
+/* Delays relative to the end of the intro. */
+.after {
+  animation-delay: calc(var(--intro-offset) + var(--d, 0s)) !important;
+}
+
+.hero-card {
+  opacity: 0;
+  animation:
+    cardIn 0.9s var(--ease-out) calc(var(--intro-offset) + var(--d, 0s)) forwards,
+    bob 6s ease-in-out calc(var(--intro-offset) + var(--d, 0s) + 0.9s) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro {
+    display: none;
+  }
+  .landing-stage,
+  .landing-glow {
+    opacity: 1;
+    clip-path: none;
+  }
+}
