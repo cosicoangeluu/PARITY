@@ -33,7 +33,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${geist.variable} antialiased`}>
+    // The landing's inline skip script sets data-intro on <html> before hydration.
+    <html
+      lang="en"
+      className={`${bricolage.variable} ${geist.variable} antialiased`}
+      suppressHydrationWarning
+    >
       <body>{children}</body>
     </html>
   );
