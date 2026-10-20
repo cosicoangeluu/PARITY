@@ -517,7 +517,7 @@ const TOPICS: Topic[] = [
             When every payment is confirmed, the Settle screen shows{" "}
             <strong>Everyone's settled</strong>, and a scanned bill shows{" "}
             <strong>Fully paid</strong>. If you need a record, anyone in the Group can tap{" "}
-            <strong>Export to Excel (CSV)</strong> to download every entry as a spreadsheet.
+            <strong>Export to Excel</strong> to download every entry as a spreadsheet.
           </p>
         ),
       },

@@ -37,7 +37,7 @@ export function formatMoney(amount: Centavos, currency = "PHP"): string {
   return formatter.format(amount / 100);
 }
 
-/** Centavos as a plain decimal string for inputs and CSV, e.g. 128650 → "1286.50". */
+/** Centavos as a plain decimal string for inputs, e.g. 128650 → "1286.50". */
 export function toDecimalString(amount: Centavos): string {
   const sign = amount < 0 ? "-" : "";
   const abs = Math.abs(amount);

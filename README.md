@@ -21,7 +21,7 @@ Everything runs on free plans: Next.js on Vercel Hobby, Supabase Free, Gemini Fl
 | Payments: "I paid" with reference number or photo, payee confirms or rejects | `features/payments/` |
 | Organizer key, backup organizer link, replace link, lock Group | `server/access.ts`, `app/g/[token]/people` |
 | Activity log and 30-day trash | `features/activity/`, `app/g/[token]/activity` |
-| CSV export (opens in Excel) | `app/g/[token]/export` |
+| Excel export (styled .xlsx) | `app/g/[token]/export` |
 | Daily keep-alive + cleanup, weekly backup | `.github/workflows/`, `app/api/cron` |
 
 The design rules for every screen are in **[DESIGN.md](DESIGN.md)**. AI coding agents are pointed to it from `AGENTS.md`.

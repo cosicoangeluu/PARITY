@@ -202,7 +202,7 @@ async function Overview({
                 href={`/g/${ctx.group.token}/export`}
                 className="btn-outline min-h-11 text-sm no-underline"
               >
-                Export to Excel (CSV)
+                Export to Excel
               </a>
             </div>
 
