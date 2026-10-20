@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { EntryForm } from "@/features/expenses/EntryForm";
+import { NewEntry } from "@/features/expenses/NewEntry";
 import { GroupGate } from "@/features/groups/GroupGate";
 import { activeParticipants } from "@/server/access";
 import { ScreenSkeleton, ScreenTitle } from "@/ui/Screen";
@@ -14,7 +14,7 @@ export default function NewExpensePage({ params }: PageProps<"/g/[token]/expense
             {ctx.group.locked ? (
               <div className="glass text-muted-dark">This Group is locked by the organizer.</div>
             ) : (
-              <EntryForm
+              <NewEntry
                 token={ctx.group.token}
                 meId={ctx.me?.id ?? ""}
                 currency={ctx.group.currency}

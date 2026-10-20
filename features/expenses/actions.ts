@@ -139,6 +139,97 @@ export async function saveEntry(
   });
 }
 
+const LineInput = EntryInput.pick({ title: true, amount: true, payerId: true });
+
+/**
+ * Several expenses at once: one line each (what, how much, who paid), sharing a date and
+ * split equally among the same people. Blank lines are skipped.
+ */
+export async function saveEntries(
+  token: string,
+  _prev: ActionResult | null,
+  form: FormData,
+): Promise<ActionResult> {
+  return run(async () => {
+    const ctx = await requireGroupContext(token);
+    const me = requireMe(ctx);
+    requireUnlocked(ctx);
+    const shared = EntryInput.pick({ date: true, members: true }).parse({
+      date: form.get("date"),
+      members: form.getAll("members").map(String),
+    });
+    const active = new Set(activeParticipants(ctx).map((p) => p.id));
+    const members: SplitMember[] = shared.members
+      .filter((id) => active.has(id))
+      .map((id) => ({ id, weight: 1 }));
+
+    const titles = form.getAll("title").map(String);
+    const amounts = form.getAll("amount").map(String);
+    const payers = form.getAll("payerId").map(String);
+    const lines = titles
+      .map((title, i) => ({ n: i + 1, title, amount: amounts[i] ?? "", payerId: payers[i] }))
+      .filter((l) => l.title.trim() || l.amount.trim());
+    if (lines.length === 0) throw new AccessError("Add at least one line.");
+
+    const rows = lines.map((l) => {
+      const parsed = LineInput.safeParse(l);
+      if (!parsed.success) {
+        throw new AccessError(`Line ${l.n}: ${parsed.error.issues[0]?.message ?? "check it."}`);
+      }
+      const input = parsed.data;
+      if (!active.has(input.payerId)) throw new AccessError(`Line ${l.n}: pick who paid.`);
+      return {
+        id: crypto.randomUUID(),
+        ...input,
+        splits: split(input.amount, "equal", members, input.payerId),
+      };
+    });
+
+    must(
+      await db()
+        .from("entries")
+        .insert(
+          rows.map((r) => ({
+            id: r.id,
+            group_id: ctx.group.id,
+            kind: "expense",
+            title: r.title,
+            amount: r.amount,
+            payer_id: r.payerId,
+            recipient_id: null,
+            split_mode: "equal",
+            category: null,
+            entry_date: shared.date,
+            created_by: me.id,
+          })),
+        ),
+      "Add entries",
+    );
+    must(
+      await db()
+        .from("entry_splits")
+        .insert(
+          rows.flatMap((r) =>
+            Object.entries(r.splits).map(([participantId, amount]) => ({
+              entry_id: r.id,
+              participant_id: participantId,
+              amount,
+              weight: 1,
+            })),
+          ),
+        ),
+      "Save splits",
+    );
+
+    await logActivity(ctx, "entry.added_many", {
+      count: rows.length,
+      amount: rows.reduce((s, r) => s + r.amount, 0),
+    });
+    await broadcastChange(`g:${token}`);
+    redirect(`/g/${token}/expenses`);
+  });
+}
+
 /** Deleted entries go to the trash for 30 days. */
 export async function deleteEntry(token: string, entryId: string): Promise<ActionResult> {
   return run(async () => {

@@ -32,6 +32,8 @@ export function describeActivity(
       return `${who} updated their GCash/Maya details`;
     case "entry.added":
       return `${who} added ${text(d.title)} · ${money(d.amount)}`;
+    case "entry.added_many":
+      return `${who} added ${String(d.count)} entries · ${money(d.amount)}`;
     case "entry.edited":
       return `${who} edited ${text(d.title)} · ${money(d.amount)}`;
     case "entry.deleted":
