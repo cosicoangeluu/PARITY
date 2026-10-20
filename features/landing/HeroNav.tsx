@@ -7,6 +7,7 @@ const SECTIONS = [
   { href: "#how", label: "How it works" },
   { href: "#scan", label: "Scan & Split" },
   { href: "#pay", label: "Payments" },
+  { href: "#faq", label: "FAQ" },
 ];
 
 export function HeroNav() {

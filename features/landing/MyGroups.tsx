@@ -35,7 +35,7 @@ export function MyGroups() {
 
   return (
     <section
-      id="how"
+      id="groups"
       aria-labelledby="my-groups"
       className="relative z-10 mx-auto w-full max-w-[1200px] px-6 pb-16"
     >

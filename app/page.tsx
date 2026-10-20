@@ -1,4 +1,5 @@
 import "@/features/landing/landing.css";
+import { Faq } from "@/features/landing/Faq";
 import { Hero } from "@/features/landing/Hero";
 import { HeroCards } from "@/features/landing/HeroCards";
 import { HeroNav } from "@/features/landing/HeroNav";
@@ -31,7 +32,7 @@ export default function LandingPage() {
           </main>
 
           <a
-            href="#how"
+            href="#groups"
             className="m-fade-up after relative z-10 flex flex-col items-center gap-2.5 self-center px-4 pt-3 pb-8 text-[13px] font-semibold text-paper no-underline"
             style={{ ["--d" as string]: "1.9s" }}
           >
@@ -41,6 +42,7 @@ export default function LandingPage() {
         </div>
 
         <MyGroups />
+        <Faq />
       </div>
     </div>
   );
