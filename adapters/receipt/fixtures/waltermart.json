@@ -1,0 +1,311 @@
+{
+  "merchant": "WALTERMART SUPERMARKET INC.",
+  "date": null,
+  "items": [
+    {
+      "name": "AC PLUS CRD NUM /1",
+      "qty": 1,
+      "printed_total": "0.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "AD FRZN CRABSTICK250GR/40",
+      "qty": 1,
+      "printed_total": "123.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "KNSUE BCON CUBES 220GR/1",
+      "qty": 1,
+      "printed_total": "92.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "KKK SCE SOY STD GRD 500ML",
+      "qty": 1,
+      "printed_total": "182.50",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "*PFS_MAGGI SCE OYSTR300ML",
+      "qty": 1,
+      "printed_total": "72.50",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "*CF10_KNORR SOUP CRABNCCO",
+      "qty": 2,
+      "printed_total": "98.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "*KC26_MCHIP CHIP NACHO 98",
+      "qty": 1,
+      "printed_total": "25.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "NSSIN NDL BFCUP 60GR/36",
+      "qty": 1,
+      "printed_total": "35.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "*CF10_JOLLY MSHRM P&S POU",
+      "qty": 2,
+      "printed_total": "41.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "NSSIN NDL PSTA CRBONARA60",
+      "qty": 4,
+      "printed_total": "70.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "STIKO WFER JR CHOWFR 380G",
+      "qty": 1,
+      "printed_total": "92.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "NSHIM NDL SHN RMYN 120GR",
+      "qty": 1,
+      "printed_total": "262.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "*CF10_RBSCO CRKR WHL WHT",
+      "qty": 1,
+      "printed_total": "68.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "DM SPSAU GRMT CRBONRA 200",
+      "qty": 2,
+      "printed_total": "87.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "*CF10_MNTOS CNDY PF SPRMI",
+      "qty": 1,
+      "printed_total": "76.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "DBMNT CNDY LMN CAN 23.8G/",
+      "qty": 1,
+      "printed_total": "75.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "CREAM FLR CORNSTRCH 200GR",
+      "qty": 1,
+      "printed_total": "27.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "MAYA FLR ALLPRPSE 800GR/1",
+      "qty": 1,
+      "printed_total": "89.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "MNSTR EDRINK UTRWHTE 355M",
+      "qty": 2,
+      "printed_total": "170.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "MILCU DEO SPORTS 80GR/12",
+      "qty": 1,
+      "printed_total": "114.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "NIVEA DEO MN INVSBL B&W50",
+      "qty": 1,
+      "printed_total": "114.50",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "*CF10_GDNIA LOAF WHT CL 4",
+      "qty": 1,
+      "printed_total": "64.25",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "*KC26_JCLBE CHIP HNY BUTT",
+      "qty": 1,
+      "printed_total": "50.00",
+      "part": 1,
+      "confidence": 0.95
+    },
+    {
+      "name": "*PFS_MAGGI SCE OYSTR300ML",
+      "qty": 1,
+      "printed_total": "72.50",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "*CF10_KNORR SOUP CRABNCCO",
+      "qty": 2,
+      "printed_total": "98.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "*KC26_MCHIP CHIP NACHO 98",
+      "qty": 1,
+      "printed_total": "25.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "NSSIN NDL BFCUP 60GR/36",
+      "qty": 1,
+      "printed_total": "35.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "*CF10_JOLLY MSHRM P&S POU",
+      "qty": 2,
+      "printed_total": "41.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "NSSIN NDL PSTA CRBONARA60",
+      "qty": 4,
+      "printed_total": "70.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "STIKO WFER JR CHOWFR 380G",
+      "qty": 1,
+      "printed_total": "92.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "NSHIM NDL SHN RMYN 120GR",
+      "qty": 1,
+      "printed_total": "262.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "*CF10_RBSCO CRKR WHL WHT",
+      "qty": 1,
+      "printed_total": "68.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "DM SPSAU GRMT CRBONRA 200",
+      "qty": 2,
+      "printed_total": "87.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "*CF10_MNTOS CNDY PF SPRMI",
+      "qty": 1,
+      "printed_total": "76.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "DBMNT CNDY LMN CAN 23.8G/",
+      "qty": 1,
+      "printed_total": "75.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "CREAM FLR CORNSTRCH 200GR",
+      "qty": 1,
+      "printed_total": "27.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "MAYA FLR ALLPRPSE 800GR/1",
+      "qty": 1,
+      "printed_total": "89.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "MNSTR EDRINK UTRWHTE 355M",
+      "qty": 2,
+      "printed_total": "170.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "MILCU DEO SPORTS 80GR/12",
+      "qty": 1,
+      "printed_total": "114.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "NIVEA DEO MN INVSBL B&W50",
+      "qty": 1,
+      "printed_total": "114.50",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "*CF10_GDNIA LOAF WHT CL 4",
+      "qty": 1,
+      "printed_total": "64.25",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "*KC26_JCLBE CHIP HNY BUTT",
+      "qty": 1,
+      "printed_total": "50.00",
+      "part": 2,
+      "confidence": 0.9
+    },
+    {
+      "name": "NSCFE RTDCF MOCHA 180ML/2",
+      "qty": 2,
+      "printed_total": "60.00",
+      "part": 2,
+      "confidence": 0.9
+    }
+  ],
+  "service_charge": null,
+  "delivery_fee": null,
+  "discount": null,
+  "total": 2087.75
+}

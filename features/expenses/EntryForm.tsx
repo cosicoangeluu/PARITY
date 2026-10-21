@@ -130,8 +130,8 @@ export function EntryForm({
       </div>
       <input type="hidden" name="kind" value={kind} />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="field sm:col-span-2">
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="field md:col-span-2">
           What for?
           <input
             name="title"

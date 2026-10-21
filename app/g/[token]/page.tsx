@@ -10,22 +10,15 @@ import { PrimaryLink } from "@/ui/Actions";
 import { Avatar, StatusPill } from "@/ui/People";
 import { ActionDock, Celebrate, ScreenSkeleton, ScreenTitle, SectionTitle } from "@/ui/Screen";
 
-export default function OverviewPage({ params, searchParams }: PageProps<"/g/[token]">) {
+export default function OverviewPage({ params }: PageProps<"/g/[token]">) {
   return (
     <Suspense fallback={<ScreenSkeleton />}>
-      <Overview params={params} searchParams={searchParams} />
+      <Overview params={params} />
     </Suspense>
   );
 }
 
-async function Overview({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ token: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const welcome = (await searchParams).welcome === "1";
+async function Overview({ params }: { params: Promise<{ token: string }> }) {
   return (
     <GroupGate params={params}>
       {async (ctx) => {
@@ -51,13 +44,11 @@ async function Overview({
               title={ctx.group.name}
             />
 
-            {welcome && (
-              <ShareCard
-                url={url}
-                title="Invite your group"
-                text={`Join "${ctx.group.name}" on Parity:`}
-              />
-            )}
+            <ShareCard
+              url={url}
+              title="Invite people to this group"
+              text={`Join "${ctx.group.name}" on Parity:`}
+            />
 
             <div className="glass m-card-in flex flex-col gap-1">
               <span className="text-[13px] text-subtle-dark">

@@ -90,7 +90,7 @@ export async function createGroup(
     await grantOrganizer(group.id, organizerKey);
     const ctx = await loadGroupContext(token);
     if (ctx) await logActivity(ctx, "group.created", { name: input.name });
-    redirect(`/g/${token}?welcome=1`);
+    redirect(`/g/${token}`);
   });
 }
 

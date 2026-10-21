@@ -8,7 +8,11 @@ const SKIP_SCRIPT = `try{var k='parity_intro_seen';if(sessionStorage.getItem(k)|
 export function IntroSequence() {
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: SKIP_SCRIPT }} />
+      <script
+        type={typeof window === "undefined" ? "text/javascript" : "text/plain"}
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: SKIP_SCRIPT }}
+      />
       <Grain id="paper-grain" opacity={0.35} blend="multiply" frequency={0.85} />
       <div className="intro" aria-hidden="true">
         <Mark size={80} className="intro-mark" barClassNames={["intro-bar-a", "intro-bar-b"]} />

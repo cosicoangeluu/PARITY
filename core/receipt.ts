@@ -119,15 +119,15 @@ function sameLine(a: ReceiptLine, b: ReceiptLine): boolean {
  * Joins the parts of a long receipt. Lines read twice in the overlap between two
  * photos (the same name and price at the end of one part and the start of the next)
  * are kept once and marked `merged` so the scanner can see what was joined.
+ * Checks the full overlap; there is no fixed limit on the number of matching rows.
  */
 export function mergeParts(parts: readonly ReceiptLine[][]): ReceiptLine[] {
   const out: ReceiptLine[] = [];
-  let previous: ReceiptLine[] = [];
   for (const part of parts) {
     let overlap = 0;
-    const max = Math.min(previous.length, part.length, 5);
+    const max = Math.min(out.length, part.length);
     for (let k = max; k > 0; k--) {
-      const tail = previous.slice(previous.length - k);
+      const tail = out.slice(out.length - k);
       const head = part.slice(0, k);
       if (tail.every((line, i) => sameLine(line, head[i]))) {
         overlap = k;
@@ -136,7 +136,6 @@ export function mergeParts(parts: readonly ReceiptLine[][]): ReceiptLine[] {
     }
     for (let i = out.length - overlap; i < out.length; i++) out[i] = { ...out[i], merged: true };
     out.push(...part.slice(overlap));
-    previous = part;
   }
   return out;
 }

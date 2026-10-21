@@ -207,7 +207,7 @@ function ItemEditor({
     null,
   );
   return (
-    <form action={action} className="grid grid-cols-[1fr_56px_96px] gap-2 rounded-2xl bg-paper p-2">
+    <form action={action} className="flex flex-col gap-2 rounded-2xl bg-paper p-2">
       <input
         name="name"
         aria-label="Item name"
@@ -215,22 +215,24 @@ function ItemEditor({
         required
         className="input"
       />
-      <input
-        name="qty"
-        aria-label="Quantity"
-        defaultValue={item?.qty ?? 1}
-        inputMode="numeric"
-        className="input money px-2 text-center"
-      />
-      <input
-        name="total"
-        aria-label="Line total"
-        defaultValue={item ? toDecimalString(item.total) : ""}
-        inputMode="decimal"
-        required
-        className="input money px-2 text-right"
-      />
-      <div className="col-span-3 flex items-center gap-2">
+      <div className="grid max-w-[320px] grid-cols-[56px_minmax(0,1fr)] gap-2">
+        <input
+          name="qty"
+          aria-label="Quantity"
+          defaultValue={item?.qty ?? 1}
+          inputMode="numeric"
+          className="input money px-2 text-center"
+        />
+        <input
+          name="total"
+          aria-label="Line total"
+          defaultValue={item ? toDecimalString(item.total) : ""}
+          inputMode="decimal"
+          required
+          className="input money px-2 text-right"
+        />
+      </div>
+      <div className="flex items-center gap-2">
         <button type="submit" className="btn-ink" disabled={pending}>
           Save
         </button>

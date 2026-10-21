@@ -417,7 +417,7 @@ export function ScanFlow({
           {lines.map((l, i) => (
             <li
               key={l.key}
-              className={`grid grid-cols-[1fr_56px_96px_44px] items-center gap-2 rounded-2xl p-1.5 ${l.confidence < 0.7 ? "bg-[var(--coral-soft)]" : ""}`}
+              className={`grid grid-cols-1 items-center gap-2 rounded-2xl p-1.5 sm:grid-cols-[minmax(0,1fr)_56px_96px_44px] ${l.confidence < 0.7 ? "bg-[var(--coral-soft)]" : ""}`}
             >
               <input
                 aria-label={`Item ${i + 1} name`}
@@ -425,29 +425,31 @@ export function ScanFlow({
                 onChange={(e) => update(l.key, { name: e.target.value })}
                 className="input min-w-0"
               />
-              <input
-                aria-label={`Item ${i + 1} quantity`}
-                inputMode="numeric"
-                value={l.qty}
-                onChange={(e) => update(l.key, { qty: e.target.value })}
-                className="input money px-2 text-center"
-              />
-              <input
-                aria-label={`Item ${i + 1} line total`}
-                inputMode="decimal"
-                value={l.total}
-                onChange={(e) => update(l.key, { total: e.target.value })}
-                className="input money px-2 text-right"
-              />
-              <button
-                type="button"
-                aria-label={`Remove item ${i + 1}`}
-                onClick={() => setLines((list) => list.filter((x) => x.key !== l.key))}
-                className="flex size-11 items-center justify-center rounded-full text-muted-light hover:bg-black/5"
-              >
-                <Icon name="x" size={16} />
-              </button>
-              <div className="col-span-4 flex flex-wrap items-center gap-3 px-1 text-[13px] text-muted-light">
+              <div className="grid grid-cols-[56px_minmax(0,96px)_44px] items-center gap-2 sm:contents">
+                <input
+                  aria-label={`Item ${i + 1} quantity`}
+                  inputMode="numeric"
+                  value={l.qty}
+                  onChange={(e) => update(l.key, { qty: e.target.value })}
+                  className="input money px-2 text-center"
+                />
+                <input
+                  aria-label={`Item ${i + 1} line total`}
+                  inputMode="decimal"
+                  value={l.total}
+                  onChange={(e) => update(l.key, { total: e.target.value })}
+                  className="input money px-2 text-right"
+                />
+                <button
+                  type="button"
+                  aria-label={`Remove item ${i + 1}`}
+                  onClick={() => setLines((list) => list.filter((x) => x.key !== l.key))}
+                  className="flex size-11 items-center justify-center rounded-full text-muted-light hover:bg-black/5"
+                >
+                  <Icon name="x" size={16} />
+                </button>
+              </div>
+              <div className="col-span-1 flex flex-wrap items-center gap-3 px-1 text-[13px] text-muted-light sm:col-span-4">
                 {parts.length > 1 && <span>Part {l.part + 1}</span>}
                 {l.merged && <span className="text-mint-dark">Merged from overlap</span>}
                 {l.confidence < 0.7 && (
