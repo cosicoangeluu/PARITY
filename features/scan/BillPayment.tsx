@@ -20,6 +20,20 @@ export async function BillPayment({ view }: { view: BillView }) {
   const money = (amount: number) => formatMoney(amount, ctx.group.currency);
   return (
     <section aria-labelledby="payment-heading" className="flex flex-col gap-4">
+      {bill.status === "claiming" && (
+        <div className="flex flex-col gap-2">
+          <Link
+            href={`/b/${bill.token}?step=items`}
+            className="btn-outline self-start no-underline"
+          >
+            Back to select items
+          </Link>
+          <p className="m-0 text-sm text-muted-dark">
+            Missed something or saw a new item? Update your selections, then continue to payment.
+            Any payments you already submitted stay recorded.
+          </p>
+        </div>
+      )}
       <div className="glass m-card-in flex flex-col gap-3">
         <h2 id="payment-heading" className="display m-0 text-[22px] font-bold">
           Pay {name}
@@ -93,11 +107,6 @@ export async function BillPayment({ view }: { view: BillView }) {
             payDetails={details}
           />
         </div>
-      )}
-      {bill.status === "claiming" && (
-        <Link href={`/b/${bill.token}?step=items`} className="btn-outline self-start no-underline">
-          Review or change my items
-        </Link>
       )}
     </section>
   );

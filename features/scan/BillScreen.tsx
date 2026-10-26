@@ -225,13 +225,22 @@ export async function BillScreen({
             aria-current={!paymentStep ? "step" : undefined}
             className={!paymentStep ? "font-semibold text-paper" : "text-subtle-dark"}
           >
-            1. Select your items
+            {isOpen && paymentStep ? (
+              <Link
+                href={`/b/${bill.token}?step=items`}
+                className="inline-flex min-h-11 items-center text-paper underline underline-offset-4"
+              >
+                1. Select your items
+              </Link>
+            ) : (
+              <span className="inline-flex min-h-11 items-center">1. Select your items</span>
+            )}
           </li>
           <li
             aria-current={paymentStep ? "step" : undefined}
             className={paymentStep ? "font-semibold text-paper" : "text-subtle-dark"}
           >
-            2. Pay and submit proof
+            <span className="inline-flex min-h-11 items-center">2. Pay and submit proof</span>
           </li>
         </ol>
       )}
