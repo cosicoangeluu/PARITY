@@ -97,24 +97,15 @@ export async function loadGroupContextById(groupId: string): Promise<GroupContex
 }
 
 async function contextFor(group: GroupRow): Promise<GroupContext> {
-  const participants = must(
-    await db()
+  const [participantResult, creationResult, store] = await Promise.all([
+    db()
       .from("participants")
       .select("*")
       .eq("group_id", group.id)
       .neq("status", "removed")
       .order("created_at"),
-    "Load participants",
-  ) as ParticipantRow[];
-
-  const store = await cookies();
-  const deviceId = store.get(DEVICE_COOKIE)?.value ?? null;
-  const orgKey = store.get(`${ORG_COOKIE_PREFIX}${group.id}`)?.value;
-  const isOrganizer = !!orgKey && sameHash(hashKey(orgKey), group.organizer_key_hash);
-  const me = deviceId ? (participants.find((p) => p.device_id === deviceId) ?? null) : null;
-  // Creation activity identifies the original payer even after organizer recovery on another device.
-  const creation = must(
-    await db()
+    // Independent of participants: fetch the creator at the same time.
+    db()
       .from("activity")
       .select("actor_id")
       .eq("group_id", group.id)
@@ -122,8 +113,15 @@ async function contextFor(group: GroupRow): Promise<GroupContext> {
       .order("created_at")
       .order("id")
       .limit(1),
-    "Load group creator",
-  ) as { actor_id: string | null }[];
+    cookies(),
+  ]);
+  const participants = must(participantResult, "Load participants") as ParticipantRow[];
+  const deviceId = store.get(DEVICE_COOKIE)?.value ?? null;
+  const orgKey = store.get(`${ORG_COOKIE_PREFIX}${group.id}`)?.value;
+  const isOrganizer = !!orgKey && sameHash(hashKey(orgKey), group.organizer_key_hash);
+  const me = deviceId ? (participants.find((p) => p.device_id === deviceId) ?? null) : null;
+  // Creation activity identifies the original payer even after organizer recovery on another device.
+  const creation = must(creationResult, "Load group creator") as { actor_id: string | null }[];
   const creatorId = creation[0]?.actor_id ?? (isOrganizer ? (me?.id ?? null) : null);
   const visibleParticipants = participants.map((p) =>
     p.id === creatorId

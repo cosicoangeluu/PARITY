@@ -280,14 +280,14 @@ export async function setClaim(
     const { ctx, bill, item } = await loadItemSelectionContext(billToken, itemId);
     const units = qty;
     await selectItemSpot(ctx, bill.id, itemId, units);
-    await logActivity(ctx, units ? "claim.ticked" : "claim.unticked", {
-      billId: bill.id,
-      item: item.name,
-      qty: units,
-    });
-    // Notifications must not hold up the saved selection's response.
+    // The spot is committed. Activity and notifications can follow the response.
     after(async () => {
       await Promise.all([
+        logActivity(ctx, units ? "claim.ticked" : "claim.unticked", {
+          billId: bill.id,
+          item: item.name,
+          qty: units,
+        }),
         broadcastChange(`b:${bill.token}`),
         broadcastChange(`g:${ctx.group.token}`),
       ]);
