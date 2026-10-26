@@ -2,10 +2,10 @@ import { Suspense } from "react";
 import { formatMoney } from "@/core/money";
 import { GroupGate } from "@/features/groups/GroupGate";
 import { loadLedger } from "@/features/groups/queries";
+import { PaymentSettings } from "@/features/payments/PaymentSettings";
 import {
   AddPersonForm,
   GroupControls,
-  PayDetailsForm,
   PersonActions,
   ShareForm,
 } from "@/features/people/PeopleForms";
@@ -113,12 +113,7 @@ export default function PeoplePage({ params }: PageProps<"/g/[token]/people">) {
                 })}
               </ul>
 
-              <SectionTitle>Your GCash and Maya</SectionTitle>
-              <PayDetailsForm
-                token={ctx.group.token}
-                gcash={me?.gcash ?? null}
-                maya={me?.maya ?? null}
-              />
+              <PaymentSettings ctx={ctx} />
 
               {ctx.isOrganizer && (
                 <>

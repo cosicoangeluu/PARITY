@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { verifyHuman } from "@/adapters/captcha/turnstile";
@@ -13,8 +14,9 @@ import {
   logActivity,
   newToken,
   requireGroupContext,
-  requireMe,
   requireOrganizer,
+  requirePaymentOwner,
+  saveCreatorPayDetails,
 } from "@/server/access";
 import { db, must } from "@/server/db";
 import { clientIp, rateLimit } from "@/server/rate-limit";
@@ -189,19 +191,21 @@ export async function updateMyPayDetails(
 ): Promise<ActionResult> {
   return run(async () => {
     const ctx = await requireGroupContext(token);
-    const me = requireMe(ctx);
+    requirePaymentOwner(ctx);
     const input = PayDetails.parse({
       gcash: form.get("gcash") ?? "",
       maya: form.get("maya") ?? "",
     });
-    must(
-      await db()
-        .from("participants")
-        .update({ gcash: input.gcash || null, maya: input.maya || null })
-        .eq("id", me.id),
-      "Save payment details",
+    const qr = form.get("qr");
+    await saveCreatorPayDetails(
+      ctx,
+      { gcash: input.gcash || null, maya: input.maya || null },
+      qr instanceof File ? qr : null,
+      form.get("removeQr") === "on",
     );
     await logActivity(ctx, "participant.paydetails", {});
+    await broadcastChange(`g:${token}`);
+    refresh();
     return { ok: true, message: "Saved." };
   });
 }

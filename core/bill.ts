@@ -1,3 +1,4 @@
+import { spotAmount } from "./item-spots";
 import type { Centavos } from "./money";
 import { allocate } from "./split";
 
@@ -9,6 +10,7 @@ export interface BillItem {
   total: Centavos;
   /** Split equally among everyone on the bill, no claiming needed. */
   sharedByAll?: boolean;
+  shareCount?: number | null;
 }
 
 export interface ItemClaim {
@@ -16,6 +18,7 @@ export interface ItemClaim {
   participantId: string;
   /** Units claimed. For single-quantity items everyone who ticks it splits it equally. */
   qty: number;
+  slot?: number | null;
 }
 
 /** Service charge, delivery fee (positive) or a discount for everyone (negative). */
@@ -82,6 +85,39 @@ export function computeBill(
     }
 
     const itemClaims = claims.filter((c) => c.itemId === item.id && c.qty > 0);
+
+    if (item.shareCount != null) {
+      const count = item.shareCount;
+      const occupied = new Set<number>();
+      for (const claim of itemClaims) {
+        if (
+          claim.slot == null ||
+          claim.qty !== 1 ||
+          claim.slot < 0 ||
+          claim.slot >= item.shareCount ||
+          occupied.has(claim.slot)
+        ) {
+          if (!overclaimed.includes(item.id)) overclaimed.push(item.id);
+          continue;
+        }
+        occupied.add(claim.slot);
+        addItem(
+          ensure(claim.participantId),
+          item.id,
+          spotAmount(item.total, item.shareCount, claim.slot),
+        );
+      }
+      const empty = Array.from({ length: item.shareCount }, (_, slot) => slot).filter(
+        (slot) => !occupied.has(slot),
+      );
+      if (empty.length)
+        unclaimed.push({
+          itemId: item.id,
+          qtyLeft: empty.length,
+          amount: empty.reduce((sum, slot) => sum + spotAmount(item.total, count, slot), 0),
+        });
+      continue;
+    }
 
     if (item.qty <= 1) {
       if (itemClaims.length === 0) {

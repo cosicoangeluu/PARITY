@@ -29,7 +29,7 @@ export function describeActivity(
     case "participant.share":
       return `${who} set ${nameOf(text(d.participantId))}'s default share to ${String(d.share)}`;
     case "participant.paydetails":
-      return `${who} updated their GCash/Maya details`;
+      return `${who} updated the receiving payment details`;
     case "entry.added":
       return `${who} added ${text(d.title)} · ${money(d.amount)}`;
     case "entry.added_many":

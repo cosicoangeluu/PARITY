@@ -48,7 +48,7 @@ You need Node.js 22+, a GitHub account, and these free accounts: Supabase, Verce
 ### 1. Supabase (database, storage, realtime)
 
 1. Create a project at [supabase.com](https://supabase.com) on the **Free** plan. Pick the Singapore region (closest to the Philippines).
-2. Open **SQL Editor**, paste the whole of `supabase/migrations/20261019000000_init.sql`, and run it. This creates the tables, locks them with Row Level Security, and makes three private storage buckets.
+2. Open **SQL Editor** and run the files in `supabase/migrations/` in filename order. For an existing database, run only migrations not previously applied. The `20261026000000_item_spots.sql` migration adds fixed sharing spots and atomic selection; deploy it before the updated app. Existing recorded splits are preserved. `supabase/tests/item-spots.sql` checks capacity and unticking in a transaction that rolls back its fixtures.
 3. In **Project Settings → API Keys**, copy:
    - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
    - Publishable / `anon` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`

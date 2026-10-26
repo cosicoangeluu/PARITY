@@ -1,7 +1,7 @@
 import "server-only";
 import type { Centavos } from "@/core/money";
 import { computeBalances, type LedgerEntry, settleUp, type Transfer } from "@/core/settle";
-import type { GroupContext } from "@/server/access";
+import { type GroupContext, groupBills } from "@/server/access";
 import { db, must } from "@/server/db";
 import type { ActivityRow, BillRow, EntryRow, PaymentRow } from "@/server/types";
 
@@ -10,10 +10,11 @@ export interface Ledger {
   payments: PaymentRow[];
   balances: Record<string, Centavos>;
   transfers: Transfer[];
+  openBills: BillRow[];
 }
 
 export async function loadLedger(ctx: GroupContext): Promise<Ledger> {
-  const [entries, payments] = await Promise.all([
+  const [entries, payments, bills] = await Promise.all([
     db()
       .from("entries")
       .select("*, entry_splits(participant_id, amount, weight)")
@@ -26,8 +27,14 @@ export async function loadLedger(ctx: GroupContext): Promise<Ledger> {
       .select("*")
       .eq("group_id", ctx.group.id)
       .order("created_at", { ascending: false }),
+    groupBills(ctx),
   ]);
-  const entryRows = must(entries, "Load entries") as EntryRow[];
+  const openBills = bills.filter((b) => b.status === "claiming");
+  const openIds = new Set(openBills.map((b) => b.id));
+  // Early transfers belong to the open bill until its expense is posted at finalization.
+  const entryRows = (must(entries, "Load entries") as EntryRow[]).filter(
+    (e) => !e.bill_id || !openIds.has(e.bill_id),
+  );
   const paymentRows = must(payments, "Load payments") as PaymentRow[];
 
   const ledger: LedgerEntry[] = entryRows.map((e) => ({
@@ -41,7 +48,13 @@ export async function loadLedger(ctx: GroupContext): Promise<Ledger> {
     ledger,
     ctx.participants.map((p) => p.id),
   );
-  return { entries: entryRows, payments: paymentRows, balances, transfers: settleUp(balances) };
+  return {
+    entries: entryRows,
+    payments: paymentRows,
+    balances,
+    transfers: settleUp(balances),
+    openBills,
+  };
 }
 
 export async function loadOpenBills(groupId: string): Promise<BillRow[]> {

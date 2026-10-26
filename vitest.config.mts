@@ -7,6 +7,6 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["core/**/*.test.ts", "adapters/**/*.test.ts"],
+    include: ["core/**/*.test.ts", "adapters/**/*.test.ts", "server/**/*.test.ts"],
   },
 });

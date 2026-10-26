@@ -63,6 +63,7 @@ export interface BillRow {
   created_at: string;
   finalized_at: string | null;
   paid_at: string | null;
+  selection_version: number;
 }
 
 export interface BillItemRow {
@@ -73,6 +74,7 @@ export interface BillItemRow {
   qty: number;
   total: number;
   shared_by_all: boolean;
+  share_count: number | null;
   source_part: number;
 }
 

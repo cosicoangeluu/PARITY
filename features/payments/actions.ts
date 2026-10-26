@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { z } from "zod";
 import { parseAmount } from "@/core/money";
 import { type ActionResult, run } from "@/lib/result";
@@ -7,12 +8,13 @@ import {
   AccessError,
   type GroupContext,
   logActivity,
+  requireBillPayment,
   requireGroupContext,
   requireMe,
+  saveSentPayment,
 } from "@/server/access";
 import { db, must } from "@/server/db";
 import { broadcastChange } from "@/server/realtime";
-import { uploadImage } from "@/server/storage";
 import type { PaymentRow } from "@/server/types";
 import { isFullyPaid, loadBill, markBillPaid } from "../scan/queries";
 
@@ -51,25 +53,7 @@ async function notify(ctx: GroupContext, billId: string | null) {
       .maybeSingle<{ token: string }>();
     if (data) await broadcastChange(`b:${data.token}`);
   }
-}
-
-async function validBill(ctx: GroupContext, billId: string | null, toId: string) {
-  if (!billId) return null;
-  const { data } = await db()
-    .from("bills")
-    .select("id, payer_id, status")
-    .eq("id", billId)
-    .eq("group_id", ctx.group.id)
-    .maybeSingle<{
-      id: string;
-      payer_id: string;
-      status: string;
-    }>();
-  if (!data) throw new AccessError("That bill isn't in this Group.");
-  if (data.status === "claiming")
-    throw new AccessError("Wait until the bill is finalized before paying.");
-  if (data.payer_id !== toId) throw new AccessError("Bill payments go to whoever paid the bill.");
-  return data;
+  refresh();
 }
 
 /** "I paid": the payment waits as Pending until the payee confirms it. */
@@ -85,7 +69,6 @@ export async function recordPayment(
     const me = requireMe(ctx);
     if (me.id === toId) throw new AccessError("You can't pay yourself.");
     if (!ctx.participants.some((p) => p.id === toId)) throw new AccessError("Pick who you paid.");
-    await validBill(ctx, billId, toId);
     const input = PaymentInput.parse({
       amount: form.get("amount") ?? "",
       method: form.get("method"),
@@ -93,28 +76,19 @@ export async function recordPayment(
       note: form.get("note") || undefined,
     });
 
-    const payment = must(
-      await db()
-        .from("payments")
-        .insert({
-          group_id: ctx.group.id,
-          bill_id: billId,
-          from_id: me.id,
-          to_id: toId,
-          amount: input.amount,
-          method: input.method,
-          reference: input.reference ?? null,
-          note: input.note ?? null,
-        })
-        .select("id")
-        .single<{ id: string }>(),
-      "Record payment",
-    );
     const proof = form.get("proof");
-    if (proof instanceof File && proof.size > 0) {
-      const path = await uploadImage("proofs", `${ctx.group.id}/${payment.id}.jpg`, proof, 524_288);
-      await db().from("payments").update({ proof_path: path }).eq("id", payment.id);
-    }
+    const payment = await saveSentPayment(
+      ctx,
+      {
+        bill_id: billId,
+        to_id: toId,
+        amount: input.amount,
+        method: input.method,
+        reference: input.reference ?? null,
+        note: input.note ?? null,
+      },
+      proof instanceof File ? proof : null,
+    );
     await logActivity(ctx, "payment.sent", {
       paymentId: payment.id,
       to: toId,
@@ -138,7 +112,7 @@ export async function recordReceived(
     const ctx = await requireGroupContext(groupToken);
     const me = requireMe(ctx);
     if (me.id === fromId) throw new AccessError("Pick who paid you.");
-    await validBill(ctx, billId, me.id);
+    await requireBillPayment(ctx, billId, me.id, fromId, false);
     const input = PaymentInput.parse({
       amount: form.get("amount") ?? "",
       method: form.get("method"),
@@ -226,7 +200,13 @@ async function settle(ctx: GroupContext, payment: PaymentRow, decidedBy: string)
       .eq("id", payment.bill_id)
       .maybeSingle<{ token: string }>();
     const view = data ? await loadBill(data.token) : null;
-    if (view && view.bill.status === "finalized" && isFullyPaid(view)) await markBillPaid(view);
+    if (
+      view &&
+      view.bill.status === "finalized" &&
+      isFullyPaid(view) &&
+      !view.payments.some((p) => p.status === "pending")
+    )
+      await markBillPaid(view);
   }
   await notify(ctx, payment.bill_id);
 }

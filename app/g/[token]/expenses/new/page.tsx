@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { NewEntry } from "@/features/expenses/NewEntry";
 import { GroupGate } from "@/features/groups/GroupGate";
-import { activeParticipants } from "@/server/access";
 import { ScreenSkeleton, ScreenTitle } from "@/ui/Screen";
 
 export default function NewExpensePage({ params }: PageProps<"/g/[token]/expenses/new">) {
@@ -10,20 +9,15 @@ export default function NewExpensePage({ params }: PageProps<"/g/[token]/expense
       <GroupGate params={params}>
         {(ctx) => (
           <div className="flex flex-col gap-2">
-            <ScreenTitle eyebrow={ctx.group.name} title="Add an entry" />
+            <ScreenTitle eyebrow={ctx.group.name} title="List your items" />
             {ctx.group.locked ? (
               <div className="glass text-muted-dark">This Group is locked by the organizer.</div>
+            ) : !ctx.isOrganizer ? (
+              <div className="glass text-muted-dark">
+                The creator adds items. Open the group's bill to select yours.
+              </div>
             ) : (
-              <NewEntry
-                token={ctx.group.token}
-                meId={ctx.me?.id ?? ""}
-                currency={ctx.group.currency}
-                people={activeParticipants(ctx).map((p) => ({
-                  id: p.id,
-                  name: p.name,
-                  defaultShare: Number(p.default_share),
-                }))}
-              />
+              <NewEntry token={ctx.group.token} currency={ctx.group.currency} />
             )}
           </div>
         )}

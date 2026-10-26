@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { formatMoney } from "@/core/money";
 import { GroupGate } from "@/features/groups/GroupGate";
 import { loadLedger, nameLookup } from "@/features/groups/queries";
 import { PayForm } from "@/features/payments/PayForm";
 import { PaymentItem } from "@/features/payments/PaymentItem";
+import { creatorPayDetails } from "@/server/access";
 import { Avatar, StatusPill } from "@/ui/People";
 import { Celebrate, ScreenSkeleton, ScreenTitle, SectionTitle } from "@/ui/Screen";
 
@@ -13,13 +15,19 @@ export default function SettlePage({ params }: PageProps<"/g/[token]/settle">) {
       <GroupGate params={params}>
         {async (ctx) => {
           const ledger = await loadLedger(ctx);
+          const creatorDetails = await creatorPayDetails(ctx);
           const nameOf = nameLookup(ctx);
           const currency = ctx.group.currency;
           const me = ctx.me;
           const pending = ledger.payments.filter((p) => p.status === "pending");
           const pendingBetween = (from: string, to: string) =>
             pending
-              .filter((p) => p.from_id === from && p.to_id === to)
+              .filter(
+                (p) =>
+                  p.from_id === from &&
+                  p.to_id === to &&
+                  !ledger.openBills.some((b) => b.id === p.bill_id),
+              )
               .reduce((s, p) => s + p.amount, 0);
           const toConfirm = pending.filter((p) => p.to_id === me?.id);
           const history = ledger.payments.filter((p) => !toConfirm.includes(p));
@@ -31,18 +39,40 @@ export default function SettlePage({ params }: PageProps<"/g/[token]/settle">) {
                 title={
                   ledger.transfers.length
                     ? `${ledger.transfers.length} transfer${ledger.transfers.length > 1 ? "s" : ""} settle everything`
-                    : "All settled"
+                    : ledger.openBills.length
+                      ? "Your bills are still open"
+                      : "All settled"
                 }
               >
                 Parity works out the fewest payments. Only the person who receives money can confirm
                 it.
               </ScreenTitle>
 
-              {ledger.transfers.length === 0 && ledger.entries.length > 0 && (
-                <div className="glass">
-                  <Celebrate>Everyone's settled</Celebrate>
+              {ledger.openBills.length > 0 && (
+                <div className="glass flex flex-col gap-3">
+                  <p className="m-0 text-sm text-muted-dark">
+                    Select items and pay directly on each open bill. Early payments stay there until
+                    the list is finalized.
+                  </p>
+                  {ledger.openBills.map((b) => (
+                    <Link
+                      key={b.id}
+                      href={`/b/${b.token}`}
+                      className="btn-outline self-start no-underline"
+                    >
+                      Open {b.title}
+                    </Link>
+                  ))}
                 </div>
               )}
+
+              {ledger.openBills.length === 0 &&
+                ledger.transfers.length === 0 &&
+                ledger.entries.length > 0 && (
+                  <div className="glass">
+                    <Celebrate>Everyone's settled</Celebrate>
+                  </div>
+                )}
 
               {toConfirm.length > 0 && (
                 <>
@@ -61,7 +91,7 @@ export default function SettlePage({ params }: PageProps<"/g/[token]/settle">) {
                   const mine = t.from === me?.id;
                   const toMe = t.to === me?.id;
                   const waiting = pendingBetween(t.from, t.to);
-                  const payee = ctx.participants.find((p) => p.id === t.to);
+
                   return (
                     <li
                       key={`${t.from}-${t.to}`}
@@ -87,7 +117,7 @@ export default function SettlePage({ params }: PageProps<"/g/[token]/settle">) {
                         <span
                           className={`min-w-0 flex-1 text-sm ${mine ? "text-muted-light" : "text-muted-dark"}`}
                         >
-                          {mine ? "You pay" : nameOf(t.from) + " pays"}{" "}
+                          {mine ? "You pay" : `${nameOf(t.from)} pays`}{" "}
                           {toMe ? "you" : nameOf(t.to)}
                         </span>
                         <span className="money display text-xl font-bold">
@@ -113,10 +143,7 @@ export default function SettlePage({ params }: PageProps<"/g/[token]/settle">) {
                               otherId={t.to}
                               otherName={nameOf(t.to)}
                               amountDue={Math.max(t.amount - waiting, 0)}
-                              payDetails={{
-                                gcash: payee?.gcash ?? null,
-                                maya: payee?.maya ?? null,
-                              }}
+                              payDetails={t.to === ctx.creatorId ? creatorDetails : undefined}
                             />
                           </div>
                         </details>

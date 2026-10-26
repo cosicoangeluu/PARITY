@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 import { toDecimalString } from "@/core/money";
 import { compressImage } from "@/lib/image";
@@ -35,8 +36,14 @@ export function PayForm({
   otherName: string;
   amountDue: number;
   direction?: "sent" | "received";
-  payDetails?: { gcash: string | null; maya: string | null };
+  payDetails?: {
+    gcash: string | null;
+    maya: string | null;
+    qrUrl?: string | null;
+    qrDownloadUrl?: string | null;
+  };
 }) {
+  const router = useRouter();
   const bound =
     direction === "sent"
       ? recordPayment.bind(null, groupToken, billId, otherId)
@@ -58,17 +65,55 @@ export function PayForm({
         }
       }
       setProofError(null);
-      return bound(prev, form);
+      const result = await bound(prev, form);
+      if (result.ok) router.refresh();
+      return result;
     },
     null,
   );
   const [method, setMethod] = useState<string>(
-    payDetails?.gcash ? "gcash" : payDetails?.maya ? "maya" : "cash",
+    payDetails?.gcash ? "gcash" : payDetails?.maya ? "maya" : payDetails?.qrUrl ? "bank" : "cash",
   );
   const needsReference = direction === "sent" && ["gcash", "maya", "bank"].includes(method);
 
+  if (result?.ok)
+    return (
+      <div role="status" className="flex flex-col gap-2">
+        <strong>
+          {direction === "sent" ? `Waiting for ${otherName} to confirm` : "Payment recorded"}
+        </strong>
+        <p className="m-0 text-sm text-muted-light">
+          {direction === "sent"
+            ? "Your payment was submitted. You can close this page and return using the same link."
+            : result.message}
+        </p>
+      </div>
+    );
+
   return (
     <form action={action} className="flex flex-col gap-4">
+      {direction === "sent" && payDetails?.qrUrl && (
+        <div className="flex flex-col items-start gap-3">
+          <strong>Scan to pay {otherName}</strong>
+          {/* biome-ignore lint/performance/noImgElement: private short-lived storage image */}
+          <img
+            src={payDetails.qrUrl}
+            alt={`${otherName}'s bank or e-wallet payment QR`}
+            width={280}
+            height={280}
+            className="max-w-full self-center object-contain"
+          />
+          {payDetails.qrDownloadUrl && (
+            <a href={payDetails.qrDownloadUrl} className="btn-ink min-h-11 no-underline">
+              Save QR
+            </a>
+          )}
+          <p className="m-0 text-sm text-muted-light">
+            On this phone? Save the QR, then import it in your bank or e-wallet app. Check the
+            recipient's name before sending.
+          </p>
+        </div>
+      )}
       {direction === "sent" && (payDetails?.gcash || payDetails?.maya) && (
         <div className="flex flex-col gap-2 rounded-2xl bg-paper p-3">
           <span className="text-[13px] font-semibold text-muted-light">Send to {otherName}</span>
@@ -88,7 +133,7 @@ export function PayForm({
       )}
 
       <fieldset className="m-0 flex flex-wrap gap-1.5 border-0 p-0">
-        <legend className="mb-2 text-sm font-semibold">How?</legend>
+        <legend className="mb-2 text-sm font-semibold">How did you pay?</legend>
         {METHODS.map((m) => (
           <label
             key={m.value}
@@ -138,7 +183,7 @@ export function PayForm({
 
       {direction === "sent" && (
         <label className="field">
-          {method === "cash" ? "Photo (optional)" : "Screenshot (optional)"}
+          {method === "cash" ? "Payment proof (optional)" : "Upload payment proof (optional)"}
           <input name="proof" type="file" accept="image/*" className="input py-2 text-sm" />
           <span className="text-[13px] font-normal text-muted-light">
             Only you and {otherName} can see it.
@@ -158,7 +203,7 @@ export function PayForm({
       <FormStatus result={proofError ? { ok: false, error: proofError } : result} />
       <div className="self-start rounded-full bg-ink p-1.5">
         <PrimaryButton pending={pending} icon="check">
-          {direction === "sent" ? "I paid" : `${otherName} paid me`}
+          {direction === "sent" ? "Submit payment" : `${otherName} paid me`}
         </PrimaryButton>
       </div>
     </form>

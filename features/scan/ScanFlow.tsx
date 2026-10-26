@@ -22,6 +22,7 @@ interface Line {
   key: string;
   name: string;
   qty: string;
+  shareCount: string;
   total: string;
   part: number;
   confidence: number;
@@ -39,6 +40,7 @@ function toLines(lines: ReceiptLine[], partOffset?: number): Line[] {
     key: uid(),
     name: l.name,
     qty: String(l.qty),
+    shareCount: String(l.qty),
     total: toDecimalString(l.total),
     part: partOffset ?? l.part,
     confidence: l.confidence,
@@ -210,6 +212,7 @@ export function ScanFlow({
     const items = lines.map((l) => ({
       name: l.name.trim(),
       qty: Math.max(1, Math.min(99, Math.round(Number(l.qty) || 1))),
+      shareCount: Number(l.shareCount),
       total: parseAmount(l.total),
       sharedByAll: l.sharedByAll,
       part: l.part,
@@ -456,6 +459,19 @@ export function ScanFlow({
                   <span className="font-semibold text-coral-dark">Please check</span>
                 )}
                 <label className="flex items-center gap-1.5">
+                  People sharing
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    step={1}
+                    value={l.shareCount}
+                    disabled={l.sharedByAll}
+                    onChange={(e) => update(l.key, { shareCount: e.target.value })}
+                    className="input money w-20"
+                  />
+                </label>
+                <label className="flex items-center gap-1.5">
                   <input
                     type="checkbox"
                     checked={l.sharedByAll}
@@ -479,6 +495,7 @@ export function ScanFlow({
                   key: uid(),
                   name: "",
                   qty: "1",
+                  shareCount: "1",
                   total: "",
                   part: Math.max(parts.length - 1, 0),
                   confidence: 1,

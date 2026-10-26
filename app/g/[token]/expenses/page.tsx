@@ -23,9 +23,25 @@ export default function ExpensesPage({ params }: PageProps<"/g/[token]/expenses"
               <ScreenTitle eyebrow="Expenses" title={formatMoney(spent, currency)}>
                 spent together
               </ScreenTitle>
+              {ledger.openBills.length > 0 && (
+                <div className="glass flex flex-col gap-3">
+                  <strong>Items being selected</strong>
+                  {ledger.openBills.map((bill) => (
+                    <Link
+                      key={bill.id}
+                      href={`/b/${bill.token}`}
+                      className="btn-outline self-start no-underline"
+                    >
+                      {bill.title} · Select items and pay
+                    </Link>
+                  ))}
+                </div>
+              )}
               {ledger.entries.length === 0 ? (
                 <div className="glass text-muted-dark">
-                  No expenses yet. Add one, or scan a receipt.
+                  {ledger.openBills.length
+                    ? "These lists appear in the expense total after finalization."
+                    : "No finalized expenses yet."}
                 </div>
               ) : (
                 <ul className="card m-0 flex list-none flex-col p-0">
@@ -69,14 +85,16 @@ export default function ExpensesPage({ params }: PageProps<"/g/[token]/expenses"
                   ))}
                 </ul>
               )}
-              <ActionDock>
-                <PrimaryLink href={`/g/${ctx.group.token}/expenses/new`} icon="plus">
-                  Add expense
-                </PrimaryLink>
-                <Link href={`/g/${ctx.group.token}/scan`} className="btn-outline no-underline">
-                  Scan
-                </Link>
-              </ActionDock>
+              {ctx.isOrganizer && (
+                <ActionDock>
+                  <PrimaryLink href={`/g/${ctx.group.token}/expenses/new`} icon="plus">
+                    List items
+                  </PrimaryLink>
+                  <Link href={`/g/${ctx.group.token}/scan`} className="btn-outline no-underline">
+                    Scan
+                  </Link>
+                </ActionDock>
+              )}
             </div>
           );
         }}

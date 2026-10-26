@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { compressImage } from "@/lib/image";
 import { FormStatus } from "@/ui/FormStatus";
 import {
   addParticipant,
@@ -17,16 +18,38 @@ export function PayDetailsForm({
   token,
   gcash,
   maya,
+  qrUrl,
 }: {
   token: string;
   gcash: string | null;
   maya: string | null;
+  qrUrl?: string | null;
 }) {
-  const [result, action, pending] = useActionState(updateMyPayDetails.bind(null, token), null);
+  const [result, action, pending] = useActionState(
+    async (prev: Awaited<ReturnType<typeof updateMyPayDetails>> | null, form: FormData) => {
+      const qr = form.get("qr");
+      if (qr instanceof File && qr.size) {
+        try {
+          form.set(
+            "qr",
+            await compressImage(qr, { maxBytes: 450_000, maxSide: 1600 }),
+            "payment-qr.jpg",
+          );
+        } catch {
+          return {
+            ok: false as const,
+            error: "Couldn't read that QR image. Choose a JPEG, PNG or WebP image.",
+          };
+        }
+      }
+      return updateMyPayDetails(token, prev, form);
+    },
+    null,
+  );
   return (
     <form action={action} className="card flex flex-col gap-4">
       <p className="m-0 text-[15px] text-muted-light">
-        People who owe you see these next to the amount, with a copy button.
+        Members see only the group creator's payment details when they pay their share.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="field">
@@ -50,9 +73,36 @@ export function PayDetailsForm({
           />
         </label>
       </div>
+      <label className="field">
+        Bank or e-wallet payment QR
+        <input
+          name="qr"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="input py-2 text-sm"
+        />
+        <span className="text-[13px] font-normal text-muted-light">
+          Upload your receiving QR. Members can scan it or save it to use in their banking app.
+        </span>
+      </label>
+      {qrUrl && (
+        <div className="flex flex-col items-start gap-3">
+          {/* biome-ignore lint/performance/noImgElement: private short-lived storage image */}
+          <img
+            src={qrUrl}
+            alt="Current receiving payment QR"
+            width={240}
+            height={240}
+            className="max-w-full object-contain"
+          />
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" name="removeQr" /> Remove current QR
+          </label>
+        </div>
+      )}
       <FormStatus result={result} />
       <button type="submit" className="btn-ink self-start" disabled={pending}>
-        Save my details
+        {pending ? "Saving…" : "Save payment details"}
       </button>
     </form>
   );

@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { db, must } from "./db";
 import { env } from "./env";
-import type { GroupRow, ParticipantRow } from "./types";
+import { removeImages, signedUrl, uploadImage } from "./storage";
+import type { BillRow, GroupRow, ParticipantRow, PaymentRow } from "./types";
 
 /**
  * THE ACCESS GATE. Parity has no accounts, so access is decided here and only here:
@@ -73,6 +74,7 @@ export interface GroupContext {
   me: ParticipantRow | null;
   isOrganizer: boolean;
   deviceId: string | null;
+  creatorId: string | null;
 }
 
 export async function loadGroupContext(token: string): Promise<GroupContext | null> {
@@ -110,7 +112,251 @@ async function contextFor(group: GroupRow): Promise<GroupContext> {
   const orgKey = store.get(`${ORG_COOKIE_PREFIX}${group.id}`)?.value;
   const isOrganizer = !!orgKey && sameHash(hashKey(orgKey), group.organizer_key_hash);
   const me = deviceId ? (participants.find((p) => p.device_id === deviceId) ?? null) : null;
-  return { group, participants, me, isOrganizer, deviceId };
+  // Creation activity identifies the original payer even after organizer recovery on another device.
+  const creation = must(
+    await db()
+      .from("activity")
+      .select("actor_id")
+      .eq("group_id", group.id)
+      .eq("action", group.kind === "quick" ? "bill.created" : "group.created")
+      .order("created_at")
+      .order("id")
+      .limit(1),
+    "Load group creator",
+  ) as { actor_id: string | null }[];
+  const creatorId = creation[0]?.actor_id ?? (isOrganizer ? (me?.id ?? null) : null);
+  const visibleParticipants = participants.map((p) =>
+    p.id === creatorId
+      ? p
+      : {
+          ...p,
+          gcash: null,
+          maya: null,
+          pay_qr_path: null,
+        },
+  );
+  return {
+    group,
+    participants: visibleParticipants,
+    me: visibleParticipants.find((p) => p.id === me?.id) ?? null,
+    isOrganizer,
+    deviceId,
+    creatorId,
+  };
+}
+
+export function requirePaymentOwner(ctx: GroupContext): ParticipantRow {
+  requireOrganizer(ctx);
+  const creator = ctx.participants.find((p) => p.id === ctx.creatorId);
+  if (!creator) throw new AccessError("The group creator's name could not be found.");
+  return creator;
+}
+
+export async function saveCreatorPayDetails(
+  ctx: GroupContext,
+  details: { gcash: string | null; maya: string | null },
+  qr: File | null,
+  removeQr: boolean,
+) {
+  const creator = requirePaymentOwner(ctx);
+  let path = removeQr ? null : creator.pay_qr_path;
+  if (qr?.size) {
+    path = await uploadImage("payqr", `${ctx.group.id}/${newToken()}.jpg`, qr, 524_288);
+  }
+  try {
+    must(
+      await db()
+        .from("participants")
+        .update({ ...details, pay_qr_path: path })
+        .eq("group_id", ctx.group.id)
+        .eq("id", creator.id),
+      "Save payment details",
+    );
+  } catch (error) {
+    if (path && path !== creator.pay_qr_path) await removeImages("payqr", [path]);
+    throw error;
+  }
+  if (creator.pay_qr_path && creator.pay_qr_path !== path) {
+    await removeImages("payqr", [creator.pay_qr_path]);
+  }
+}
+
+export async function creatorPayDetails(ctx: GroupContext) {
+  requireMe(ctx);
+  const creator = ctx.participants.find((p) => p.id === ctx.creatorId);
+  const path = creator?.pay_qr_path;
+  return {
+    gcash: creator?.gcash ?? null,
+    maya: creator?.maya ?? null,
+    qrUrl: path ? await signedUrl("payqr", path) : null,
+    qrDownloadUrl: path ? await signedUrl("payqr", path, 600, "payment-qr.jpg") : null,
+  };
+}
+
+export async function groupBills(ctx: GroupContext): Promise<BillRow[]> {
+  return must(
+    await db()
+      .from("bills")
+      .select("*")
+      .eq("group_id", ctx.group.id)
+      .order("created_at", { ascending: false }),
+    "Load group bills",
+  ) as BillRow[];
+}
+
+export async function createItemList(
+  ctx: GroupContext,
+  title: string,
+  items: { name: string; total: number; shareCount: number }[],
+) {
+  const creator = requirePaymentOwner(ctx);
+  requireMe(ctx);
+  requireUnlocked(ctx);
+  const token = newToken();
+  must(
+    await db().rpc("create_item_list", {
+      p_group: ctx.group.id,
+      p_creator: creator.id,
+      p_token: token,
+      p_title: title,
+      p_items: items,
+    }),
+    "Create item list",
+  );
+  return token;
+}
+
+export async function selectItemSpot(
+  ctx: GroupContext,
+  billId: string,
+  itemId: string,
+  qty: number,
+) {
+  const me = requireMe(ctx);
+  requireUnlocked(ctx);
+  if (!Number.isInteger(qty) || qty < 0 || qty > 99)
+    throw new AccessError("Choose a valid selection.");
+  const { error } = await db().rpc("select_item_spot", {
+    p_group: ctx.group.id,
+    p_bill: billId,
+    p_item: itemId,
+    p_person: me.id,
+    p_qty: qty,
+  });
+  if (error) {
+    if (error.code === "P0001") throw new AccessError(error.message);
+    throw new Error(`Save selection: ${error.message}`);
+  }
+}
+
+export async function finalizeBillSnapshot(
+  ctx: GroupContext,
+  bill: BillRow,
+  total: number,
+  shares: { participantId: string; amount: number }[],
+) {
+  const me = requireMe(ctx);
+  if (!ctx.isOrganizer && bill.created_by !== me.id)
+    throw new AccessError("Only the creator can finalize this list.");
+  const { error } = await db().rpc("finalize_item_list", {
+    p_group: ctx.group.id,
+    p_bill: bill.id,
+    p_version: bill.selection_version,
+    p_actor: me.id,
+    p_total: total,
+    p_shares: shares,
+  });
+  if (error) {
+    if (error.code === "P0001") throw new AccessError(error.message);
+    throw new Error(`Finalize list: ${error.message}`);
+  }
+}
+
+export async function saveBillItem(
+  ctx: GroupContext,
+  bill: BillRow,
+  itemId: string | null,
+  row: { name: string; qty: number; total: number; share_count: number | null; position: number },
+) {
+  const me = requireMe(ctx);
+  if (!ctx.isOrganizer && bill.created_by !== me.id)
+    throw new AccessError("Only the creator can edit this list.");
+  const result = itemId
+    ? await db().from("bill_items").update(row).eq("id", itemId).eq("bill_id", bill.id)
+    : await db()
+        .from("bill_items")
+        .insert({ ...row, bill_id: bill.id });
+  if (result.error?.code === "P0001") throw new AccessError(result.error.message);
+  must(result, "Save item");
+}
+
+export async function requireBillPayment(
+  ctx: GroupContext,
+  billId: string | null,
+  toId: string,
+  fromId: string,
+  mustBeDone: boolean,
+) {
+  requireMe(ctx);
+  if (!ctx.participants.some((p) => p.id === fromId && p.status === "active")) {
+    throw new AccessError("Pick an active member of this group.");
+  }
+  if (!billId) return;
+  const bill = must(
+    await db()
+      .from("bills")
+      .select("id, payer_id, status")
+      .eq("id", billId)
+      .eq("group_id", ctx.group.id)
+      .single<Pick<BillRow, "id" | "payer_id" | "status">>(),
+    "Load bill",
+  );
+  if (bill.payer_id !== toId) throw new AccessError("Bill payments go to whoever paid the bill.");
+  if (mustBeDone && bill.status === "claiming") {
+    const member = must(
+      await db()
+        .from("bill_members")
+        .select("done_at")
+        .eq("bill_id", billId)
+        .eq("participant_id", fromId)
+        .maybeSingle<{ done_at: string | null }>(),
+      "Load selection status",
+    );
+    if (!member?.done_at)
+      throw new AccessError("Finish selecting your items and continue to payment first.");
+  }
+}
+
+export async function saveSentPayment(
+  ctx: GroupContext,
+  input: {
+    bill_id: string | null;
+    to_id: string;
+    amount: number;
+    method: PaymentRow["method"];
+    reference: string | null;
+    note: string | null;
+  },
+  proof: File | null,
+) {
+  const me = requireMe(ctx);
+  await requireBillPayment(ctx, input.bill_id, input.to_id, me.id, true);
+  const proofPath = proof?.size
+    ? await uploadImage("proofs", `${ctx.group.id}/${newToken()}.jpg`, proof, 524_288)
+    : null;
+  try {
+    return must(
+      await db()
+        .from("payments")
+        .insert({ ...input, group_id: ctx.group.id, from_id: me.id, proof_path: proofPath })
+        .select("id")
+        .single<{ id: string }>(),
+      "Record payment",
+    );
+  } catch (error) {
+    if (proofPath) await removeImages("proofs", [proofPath]);
+    throw error;
+  }
 }
 
 /** For pages: 404 when the link is wrong or was replaced. */

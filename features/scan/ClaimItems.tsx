@@ -1,15 +1,20 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
+import { spotAmount } from "@/core/item-spots";
 import { formatMoney } from "@/core/money";
+import { PrimaryButton } from "@/ui/Actions";
 import { Icon } from "@/ui/Icon";
 import { AvatarStack, StatusPill } from "@/ui/People";
+import { ActionDock } from "@/ui/Screen";
 import { markOpened, setClaim, setDone } from "./actions";
 
 export interface ClaimItem {
   id: string;
   name: string;
   qty: number;
+  shareCount?: number | null;
   total: number;
   sharedByAll: boolean;
   claimers: { id: string; name: string; qty: number; share: number }[];
@@ -28,6 +33,7 @@ export function ClaimItems({
   currency,
   canClaim,
   done,
+  payAfter = false,
 }: {
   billToken: string;
   items: ClaimItem[];
@@ -35,13 +41,23 @@ export function ClaimItems({
   currency: string;
   canClaim: boolean;
   done: boolean;
+  payAfter?: boolean;
 }) {
+  const router = useRouter();
   const [optimistic, setOptimistic] = useOptimistic(
     items,
     (state, change: { id: string; qty: number }) =>
-      state.map((i) => (i.id === change.id ? { ...i, myQty: change.qty } : i)),
+      state.map((i) =>
+        i.id === change.id
+          ? {
+              ...i,
+              myQty: change.qty,
+              unclaimedQty: Math.max(0, i.unclaimedQty + i.myQty - change.qty),
+            }
+          : i,
+      ),
   );
-  const [, start] = useTransition();
+  const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,6 +70,7 @@ export function ClaimItems({
       setOptimistic({ id, qty });
       const result = await setClaim(billToken, id, qty);
       if (!result.ok) setError(result.error);
+      else router.refresh();
     });
   }
 
@@ -81,7 +98,7 @@ export function ClaimItems({
                 {canClaim &&
                   open &&
                   !item.sharedByAll &&
-                  (item.qty > 1 ? (
+                  (item.shareCount == null && item.qty > 1 ? (
                     <fieldset
                       className="m-0 flex items-center gap-1 border-0 p-0"
                       aria-label={`How many ${item.name} you had`}
@@ -89,7 +106,7 @@ export function ClaimItems({
                       <button
                         type="button"
                         aria-label="One less"
-                        disabled={item.myQty === 0}
+                        disabled={pending || item.myQty === 0}
                         onClick={() => claim(item.id, item.myQty - 1)}
                         className="flex size-11 items-center justify-center rounded-full border border-line"
                       >
@@ -99,7 +116,7 @@ export function ClaimItems({
                       <button
                         type="button"
                         aria-label="One more"
-                        disabled={item.myQty >= item.myQty + item.unclaimedQty}
+                        disabled={pending || item.myQty >= item.myQty + item.unclaimedQty}
                         onClick={() => claim(item.id, item.myQty + 1)}
                         className="flex size-11 items-center justify-center rounded-full border border-line"
                       >
@@ -110,6 +127,7 @@ export function ClaimItems({
                     <button
                       type="button"
                       aria-pressed={mine}
+                      disabled={pending || (!mine && item.unclaimedQty === 0)}
                       aria-label={`I had ${item.name}`}
                       onClick={() => claim(item.id, mine ? 0 : 1)}
                       className={`flex size-11 flex-none items-center justify-center rounded-full border-2 ${mine ? "border-mint-dark bg-mint-dark text-white" : "border-line"}`}
@@ -119,7 +137,7 @@ export function ClaimItems({
                   ))}
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-semibold">
-                    {item.qty > 1 ? `${item.qty}× ` : ""}
+                    {item.shareCount == null && item.qty > 1 ? `${item.qty}× ` : ""}
                     {item.name}
                   </div>
                   {item.claimers.length > 0 && (
@@ -127,7 +145,7 @@ export function ClaimItems({
                       {item.claimers
                         .map(
                           (c) =>
-                            `${c.name}${item.qty > 1 ? ` ×${c.qty}` : ""} ${formatMoney(c.share, currency)}`,
+                            `${c.name}${item.shareCount == null && item.qty > 1 ? ` ×${c.qty}` : ""} ${formatMoney(c.share, currency)}`,
                         )
                         .join(" · ")}
                     </div>
@@ -138,7 +156,22 @@ export function ClaimItems({
                   {formatMoney(item.total, currency)}
                 </span>
               </div>
-              {item.sharedByAll ? (
+              {item.shareCount != null ? (
+                <div className="flex flex-wrap justify-between gap-2 text-[13px] text-muted-light">
+                  <span>
+                    {item.shareCount - item.unclaimedQty} of {item.shareCount} spots selected
+                  </span>
+                  <span className="money">
+                    {formatMoney(spotAmount(item.total, item.shareCount, 0), currency)}
+                    {item.total % item.shareCount ? " or 1¢ less" : ""} per person
+                  </span>
+                  {item.unclaimedQty === 0 && (
+                    <span className="font-semibold text-mint-dark">
+                      {mine ? "Full · your spot is saved" : "Full · selected by others"}
+                    </span>
+                  )}
+                </div>
+              ) : item.sharedByAll ? (
                 <span className="self-start text-[13px] text-mint-dark">Shared by everyone</span>
               ) : item.unclaimedQty > 0 ? (
                 <span className="self-start">
@@ -151,14 +184,45 @@ export function ClaimItems({
           );
         })}
       </ul>
-      {canClaim && open && (
-        <button
-          type="button"
-          className={done ? "btn-outline self-start" : "btn-outline self-start"}
-          onClick={() => start(async () => void (await setDone(billToken, !done)))}
-        >
-          <Icon name="check" size={16} /> {done ? "Not done yet" : "I'm done claiming"}
-        </button>
+      {canClaim && open && payAfter ? (
+        <ActionDock>
+          <PrimaryButton
+            type="button"
+            pending={pending}
+            onClick={() => {
+              setError(null);
+              start(async () => {
+                const result = await setDone(billToken, true);
+                if (!result.ok) {
+                  setError(result.error);
+                  return;
+                }
+                router.push(`/b/${billToken}?step=payment`);
+                router.refresh();
+              });
+            }}
+          >
+            Continue to payment
+          </PrimaryButton>
+        </ActionDock>
+      ) : (
+        canClaim &&
+        open && (
+          <button
+            type="button"
+            className={done ? "btn-outline self-start" : "btn-outline self-start"}
+            disabled={pending}
+            onClick={() =>
+              start(async () => {
+                const result = await setDone(billToken, !done);
+                if (!result.ok) setError(result.error);
+                else router.refresh();
+              })
+            }
+          >
+            <Icon name="check" size={16} /> {done ? "Not done yet" : "I'm done claiming"}
+          </button>
+        )
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { readReceipt } from "@/adapters/receipt";
@@ -10,6 +11,7 @@ import {
   AccessError,
   activeParticipants,
   ensureDeviceId,
+  finalizeBillSnapshot,
   type GroupContext,
   grantOrganizer,
   hashKey,
@@ -19,13 +21,15 @@ import {
   requireGroupContext,
   requireMe,
   requireUnlocked,
+  saveBillItem,
+  selectItemSpot,
 } from "@/server/access";
 import { db, must } from "@/server/db";
 import { env } from "@/server/env";
 import { clientIp, rateLimit } from "@/server/rate-limit";
 import { broadcastChange } from "@/server/realtime";
 import { uploadImage } from "@/server/storage";
-import { type BillView, loadBill } from "./queries";
+import { type BillView, isFullyPaid, loadBill, markBillPaid } from "./queries";
 
 const MAX_PARTS = 6;
 
@@ -84,6 +88,7 @@ const BillPayload = z.object({
       z.object({
         name: z.string().trim().min(1, "Every item needs a name.").max(80),
         qty: z.number().int().min(1).max(99),
+        shareCount: z.number().int().min(1).max(99).optional(),
         total: z.number().int().min(0),
         sharedByAll: z.boolean().default(false),
         part: z
@@ -195,6 +200,7 @@ export async function createBill(
             qty: item.qty,
             total: item.total,
             shared_by_all: item.sharedByAll,
+            share_count: item.sharedByAll ? null : (item.shareCount ?? item.qty),
             source_part: item.part,
           })),
         ),
@@ -259,6 +265,7 @@ async function touched(view: BillView) {
     broadcastChange(`b:${view.bill.token}`),
     broadcastChange(`g:${view.ctx.group.token}`),
   ]);
+  refresh();
 }
 
 /** Ticks (qty > 0) or unticks (qty 0) an item for the person on this device. */
@@ -269,48 +276,13 @@ export async function setClaim(
 ): Promise<ActionResult> {
   return run(async () => {
     const view = await billFor(billToken);
-    const me = requireMe(view.ctx);
+    requireMe(view.ctx);
     if (view.bill.status !== "claiming")
       throw new AccessError("This bill is closed. Ask the organizer to change it.");
     const item = view.items.find((i) => i.id === itemId);
     if (!item) throw new AccessError("That item isn't on this bill.");
-    const units = Math.max(0, Math.min(Math.floor(qty), item.qty));
-
-    if (units === 0) {
-      must(
-        await db().from("item_claims").delete().eq("item_id", itemId).eq("participant_id", me.id),
-        "Untick",
-      );
-    } else {
-      if (item.qty > 1) {
-        const others = view.claims
-          .filter((c) => c.item_id === itemId && c.participant_id !== me.id)
-          .reduce((s, c) => s + c.qty, 0);
-        if (others + units > item.qty) {
-          throw new AccessError(
-            `Only ${item.qty - others} of ${item.qty} ${item.name} left. Ask the others to adjust.`,
-          );
-        }
-      }
-      must(
-        await db()
-          .from("item_claims")
-          .upsert(
-            { item_id: itemId, participant_id: me.id, qty: item.qty > 1 ? units : 1 },
-            { onConflict: "item_id,participant_id" },
-          ),
-        "Tick",
-      );
-    }
-    await db().from("bill_members").upsert(
-      {
-        bill_id: view.bill.id,
-        participant_id: me.id,
-        opened_at: new Date().toISOString(),
-        done_at: null,
-      },
-      { onConflict: "bill_id,participant_id" },
-    );
+    const units = qty;
+    await selectItemSpot(view.ctx, view.bill.id, itemId, units);
     await logActivity(view.ctx, units ? "claim.ticked" : "claim.unticked", {
       billId: view.bill.id,
       item: item.name,
@@ -340,6 +312,8 @@ export async function setDone(billToken: string, done: boolean): Promise<ActionR
   return run(async () => {
     const view = await billFor(billToken);
     const me = requireMe(view.ctx);
+    if (view.bill.status !== "claiming")
+      throw new AccessError("Selection is already closed. Open the bill again to pay.");
     must(
       await db()
         .from("bill_members")
@@ -374,8 +348,13 @@ export async function assignItem(
   return run(async () => {
     const view = await billFor(billToken);
     requireBillOrganizer(view);
+    if (view.bill.status !== "claiming") throw new AccessError("Reopen the bill to change items.");
     const item = view.items.find((i) => i.id === itemId);
     if (!item) throw new AccessError("That item isn't on this bill.");
+    if (item.share_count != null)
+      throw new AccessError(
+        "Members select their own spots. Change the number of people sharing if needed.",
+      );
     if (target === "all") {
       must(
         await db().from("bill_items").update({ shared_by_all: true }).eq("id", itemId),
@@ -420,6 +399,7 @@ const ItemEdit = z.object({
   name: z.string().trim().min(1).max(80),
   qty: z.coerce.number().int().min(1).max(99),
   total: z.string(),
+  shareCount: z.coerce.number().int().min(1).max(99),
 });
 
 /** Items lock at the first claim; after that only the organizer edits, and it is logged. */
@@ -437,6 +417,7 @@ export async function editItem(
       name: form.get("name"),
       qty: form.get("qty"),
       total: form.get("total"),
+      shareCount: form.get("shareCount") ?? 1,
     });
     const total = parseAmount(input.total);
     if (total === null || total < 0) throw new AccessError("Enter the line total, like 380.");
@@ -446,27 +427,15 @@ export async function editItem(
           .filter((c) => c.item_id === itemId)
           .map((c) => view.ctx.participants.find((p) => p.id === c.participant_id)?.name)
       : [];
-    if (itemId) {
-      must(
-        await db()
-          .from("bill_items")
-          .update({ name: input.name, qty: input.qty, total })
-          .eq("id", itemId)
-          .eq("bill_id", view.bill.id),
-        "Edit item",
-      );
-    } else {
-      must(
-        await db().from("bill_items").insert({
-          bill_id: view.bill.id,
-          position: view.items.length,
-          name: input.name,
-          qty: input.qty,
-          total,
-        }),
-        "Add item",
-      );
-    }
+    const existing = itemId ? view.items.find((i) => i.id === itemId) : null;
+    if (itemId && !existing) throw new AccessError("That item isn't on this list.");
+    await saveBillItem(view.ctx, view.bill, itemId, {
+      name: input.name,
+      qty: input.qty,
+      total,
+      share_count: existing && existing.share_count == null ? null : input.shareCount,
+      position: existing?.position ?? view.items.length,
+    });
     await logActivity(view.ctx, itemId ? "bill.item_edited" : "bill.item_added", {
       billId: view.bill.id,
       item: input.name,
@@ -504,6 +473,8 @@ export async function setPersonalDiscount(
   return run(async () => {
     const view = await billFor(billToken);
     requireBillOrganizer(view);
+    if (view.bill.status !== "claiming")
+      throw new AccessError("Reopen the bill to change discounts.");
     const amount = parseAmount(String(form.get("amount") ?? "0")) ?? 0;
     if (amount <= 0) {
       await db()
@@ -543,49 +514,25 @@ export async function finalizeBill(billToken: string): Promise<ActionResult> {
     const total = shares.reduce((s, [, share]) => s + share.total, 0);
     if (total <= 0) throw new AccessError("Nothing to split yet.");
 
-    const entry = must(
-      await db()
-        .from("entries")
-        .insert({
-          group_id: view.ctx.group.id,
-          kind: "expense",
-          title: view.bill.title,
-          amount: total,
-          payer_id: view.bill.payer_id,
-          split_mode: "fixed",
-          category: "Food",
-          entry_date: view.bill.receipt_date ?? new Date().toLocaleDateString("en-CA"),
-          bill_id: view.bill.id,
-          created_by: view.ctx.me?.id ?? null,
-        })
-        .select("id")
-        .single<{ id: string }>(),
-      "Record bill",
-    );
-    must(
-      await db()
-        .from("entry_splits")
-        .insert(
-          shares.map(([participantId, share]) => ({
-            entry_id: entry.id,
-            participant_id: participantId,
-            amount: share.total,
-          })),
-        ),
-      "Record shares",
-    );
-    must(
-      await db()
-        .from("bills")
-        .update({ status: "finalized", finalized_at: new Date().toISOString() })
-        .eq("id", view.bill.id),
-      "Finalize",
+    await finalizeBillSnapshot(
+      view.ctx,
+      view.bill,
+      total,
+      shares.map(([participantId, share]) => ({ participantId, amount: share.total })),
     );
     await logActivity(view.ctx, "bill.finalized", {
       billId: view.bill.id,
       title: view.bill.title,
       total,
     });
+    const finalized = await loadBill(billToken);
+    if (
+      finalized &&
+      isFullyPaid(finalized) &&
+      !finalized.payments.some((p) => p.status === "pending")
+    ) {
+      await markBillPaid(finalized);
+    }
     await touched(view);
   });
 }

@@ -36,7 +36,7 @@ async function Bill({
   const view = await loadBill(token);
   if (!view) notFound();
   const { ctx } = view;
-  if (!ctx.me || ctx.me.status !== "active") {
+  if (ctx.me?.status !== "active") {
     return (
       <NamePicker
         token={ctx.group.token}
@@ -48,10 +48,12 @@ async function Bill({
       />
     );
   }
-  const share = (await searchParams).share === "1";
+  const query = await searchParams;
+  const share = query.share === "1";
   return (
     <BillScreen
       view={view}
+      step={query.step === "items" ? "items" : query.step === "payment" ? "payment" : undefined}
       showShare={share || (view.isBillOrganizer && view.bill.status === "claiming")}
     />
   );

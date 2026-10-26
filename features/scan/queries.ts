@@ -1,5 +1,6 @@
 import "server-only";
 import { type BillComputation, computeBill } from "@/core/bill";
+import { billPaymentsComplete } from "@/core/payment-progress";
 import { type GroupContext, loadGroupContextById, logActivity } from "@/server/access";
 import { db, must } from "@/server/db";
 import { removeImages } from "@/server/storage";
@@ -9,7 +10,7 @@ export interface BillView {
   bill: BillRow;
   ctx: GroupContext;
   items: BillItemRow[];
-  claims: { item_id: string; participant_id: string; qty: number }[];
+  claims: { item_id: string; participant_id: string; qty: number; claim_slot: number | null }[];
   adjustments: { id: string; label: string; amount: number }[];
   discounts: { participant_id: string; label: string; amount: number }[];
   members: { participant_id: string; opened_at: string | null; done_at: string | null }[];
@@ -48,7 +49,7 @@ export async function loadBill(token: string): Promise<BillView | null> {
     ? (must(
         await db()
           .from("item_claims")
-          .select("item_id, participant_id, qty")
+          .select("item_id, participant_id, qty, claim_slot")
           .in(
             "item_id",
             itemRows.map((i) => i.id),
@@ -73,8 +74,14 @@ export async function loadBill(token: string): Promise<BillView | null> {
       qty: i.qty,
       total: i.total,
       sharedByAll: i.shared_by_all,
+      shareCount: i.share_count,
     })),
-    claims.map((c) => ({ itemId: c.item_id, participantId: c.participant_id, qty: c.qty })),
+    claims.map((c) => ({
+      itemId: c.item_id,
+      participantId: c.participant_id,
+      qty: c.qty,
+      slot: c.claim_slot,
+    })),
     participantIds,
     adjustmentRows.map((a) => ({ label: a.label, amount: a.amount })),
     discountRows.map((d) => ({
@@ -106,12 +113,9 @@ export async function loadBill(token: string): Promise<BillView | null> {
   };
 }
 
-/** True when everyone except the payer has confirmed payments covering their share. */
+/** True when everyone's share is paid exactly, with no overpayment left to return. */
 export function isFullyPaid(view: Pick<BillView, "bill" | "computation" | "paidBy">): boolean {
-  return Object.entries(view.computation.perPerson).every(
-    ([id, share]) =>
-      id === view.bill.payer_id || share.total === 0 || (view.paidBy[id] ?? 0) >= share.total,
-  );
+  return billPaymentsComplete(view.computation.perPerson, view.paidBy, view.bill.payer_id);
 }
 
 /** When a bill becomes fully paid the receipt photos are no longer needed: delete them. */

@@ -35,7 +35,8 @@ async function Overview({ params }: { params: Promise<{ token: string }> }) {
           (p) => p.status === "pending" && p.to_id === me?.id,
         );
         const url = `${await siteUrl()}/g/${ctx.group.token}`;
-        const settled = ledger.entries.length > 0 && ledger.transfers.length === 0;
+        const settled =
+          ledger.entries.length > 0 && ledger.transfers.length === 0 && bills.length === 0;
 
         return (
           <div className="flex flex-col gap-4">
@@ -44,11 +45,48 @@ async function Overview({ params }: { params: Promise<{ token: string }> }) {
               title={ctx.group.name}
             />
 
-            <ShareCard
-              url={url}
-              title="Invite people to this group"
-              text={`Join "${ctx.group.name}" on Parity:`}
-            />
+            {ctx.isOrganizer && (
+              <ShareCard
+                url={url}
+                title="Invite people to this group"
+                text={`Join "${ctx.group.name}" on Parity:`}
+              />
+            )}
+
+            {!ctx.isOrganizer && (
+              <p className="m-0 text-muted-dark">
+                {bills.length
+                  ? "Open your bill below. Select what you consumed, then continue straight to payment and upload your proof."
+                  : "The creator has no bills awaiting selection or payment right now."}
+              </p>
+            )}
+            {bills.length > 0 && (
+              <section id="your-bills" className="flex flex-col gap-3">
+                <SectionTitle>
+                  {ctx.isOrganizer ? "Bills in progress" : "Select your items, then pay"}
+                </SectionTitle>
+                <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                  {bills.map((b) => (
+                    <li key={b.id}>
+                      <Link
+                        href={`/b/${b.token}`}
+                        className="card m-card-in m-lift flex items-center justify-between gap-3 text-ink no-underline"
+                      >
+                        <span>
+                          <span className="block text-[15px] font-semibold">{b.title}</span>
+                          <span className="text-[13px] text-muted-light">
+                            Paid by {nameOf(b.payer_id)}
+                          </span>
+                        </span>
+                        <StatusPill status={b.status === "claiming" ? "claiming" : "pending"}>
+                          {b.status === "claiming" ? "Claiming" : "Collecting"}
+                        </StatusPill>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             <div className="glass m-card-in flex flex-col gap-1">
               <span className="text-[13px] text-subtle-dark">
@@ -56,7 +94,9 @@ async function Overview({ params }: { params: Promise<{ token: string }> }) {
                   ? "The group owes you"
                   : myBalance < 0
                     ? "You owe the group"
-                    : "You're settled up"}
+                    : ledger.openBills.length > 0
+                      ? "Finalized group balance"
+                      : "You're settled up"}
               </span>
               <span className="m-rise-mask">
                 <span className="m-rise money display block text-[40px] leading-none font-bold">
@@ -64,6 +104,13 @@ async function Overview({ params }: { params: Promise<{ token: string }> }) {
                 </span>
               </span>
             </div>
+
+            {ledger.openBills.length > 0 && (
+              <p className="m-0 text-sm text-muted-dark">
+                Open bills and their early payments are tracked on each bill until the creator
+                finalizes the list.
+              </p>
+            )}
 
             {settled && (
               <div className="glass">
@@ -132,32 +179,6 @@ async function Overview({ params }: { params: Promise<{ token: string }> }) {
               </>
             )}
 
-            {bills.length > 0 && (
-              <>
-                <SectionTitle>Bills in progress</SectionTitle>
-                <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                  {bills.map((b) => (
-                    <li key={b.id}>
-                      <Link
-                        href={`/b/${b.token}`}
-                        className="card m-card-in m-lift flex items-center justify-between gap-3 text-ink no-underline"
-                      >
-                        <span>
-                          <span className="block text-[15px] font-semibold">{b.title}</span>
-                          <span className="text-[13px] text-muted-light">
-                            Paid by {nameOf(b.payer_id)}
-                          </span>
-                        </span>
-                        <StatusPill status={b.status === "claiming" ? "claiming" : "pending"}>
-                          {b.status === "claiming" ? "Claiming" : "Collecting"}
-                        </StatusPill>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-
             <SectionTitle
               action={
                 <Link
@@ -197,11 +218,21 @@ async function Overview({ params }: { params: Promise<{ token: string }> }) {
               </a>
             </div>
 
-            <ActionDock>
-              <PrimaryLink href={`/g/${ctx.group.token}/expenses/new`} icon="plus">
-                Add expense
-              </PrimaryLink>
-            </ActionDock>
+            {ctx.isOrganizer ? (
+              <ActionDock>
+                <PrimaryLink href={`/g/${ctx.group.token}/expenses/new`} icon="plus">
+                  Add expense
+                </PrimaryLink>
+              </ActionDock>
+            ) : (
+              bills.length > 0 && (
+                <ActionDock>
+                  <PrimaryLink href={bills.length === 1 ? `/b/${bills[0].token}` : "#your-bills"}>
+                    Select items and pay
+                  </PrimaryLink>
+                </ActionDock>
+              )
+            )}
           </div>
         );
       }}

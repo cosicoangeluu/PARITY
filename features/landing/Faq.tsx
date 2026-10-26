@@ -363,8 +363,8 @@ const TOPICS: Topic[] = [
             </p>
             <ul>
               <li>
-                If two people tick the same single item (say, one big pitcher of iced tea), they
-                split its price equally.
+                The creator sets how many people share each item. A ₱200 steak shared by two has two
+                ₱100 spots. Each person ticks once, and the item closes when both spots are taken.
               </li>
               <li>
                 Items like a shared platter can be marked <strong>Shared by everyone</strong>, so
@@ -375,6 +375,18 @@ const TOPICS: Topic[] = [
               </li>
             </ul>
           </>
+        ),
+      },
+      {
+        q: "Can I pay before the creator finalizes the list?",
+        a: (
+          <p>
+            Yes. Select your items and tap <strong>Continue to payment</strong>. This marks you as
+            done selecting and opens payment immediately. Send your share and submit your payment
+            details or proof. If the list changes, payments stay recorded and your bill shows any
+            extra balance or overpayment. Pending payments are shown separately until the creator
+            confirms them.
+          </p>
         ),
       },
       {
@@ -500,13 +512,14 @@ const TOPICS: Topic[] = [
         ),
       },
       {
-        q: "How do others know my GCash or Maya number?",
+        q: "Where do I find the payment number or QR?",
         a: (
           <p>
-            Add your numbers on the <strong>People</strong> screen under "Your GCash and Maya". When
-            someone needs to pay you, Parity shows your number with a <strong>Copy number</strong>{" "}
-            button, so they don't have to ask in the chat. Only add them if you're comfortable
-            sharing them with people who have the Group link.
+            The group creator adds their GCash or Maya number and a bank or e-wallet QR under
+            <strong> Receiving payment details</strong> on the bill or People screen. Members see
+            these after selecting their items and tapping <strong>Continue to payment</strong>. Copy
+            the number, scan the QR, or save the QR to use on the same phone. Members don't need to
+            add their own receiving details.
           </p>
         ),
       },

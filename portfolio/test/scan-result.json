@@ -1,0 +1,203 @@
+{
+  "photos": [
+    "09054fb7-3fd9-4f94-bfe3-350b9ae99e2a.jfif",
+    "7d6387f1-f184-413c-86fa-c59e25f1f989.jfif"
+  ],
+  "model": "gemini-3.5-flash-lite",
+  "receipt": {
+    "merchant": "WALTERMART SUPERMARKET INC.",
+    "lines": [
+      {
+        "name": "AD FRZN CRABSTICK250GR/40",
+        "qty": 1,
+        "total": 12300,
+        "part": 0,
+        "confidence": 0.95
+      },
+      {
+        "name": "KNSUE BCON CUBES 220GR/1",
+        "qty": 1,
+        "total": 9200,
+        "part": 0,
+        "confidence": 0.95
+      },
+      {
+        "name": "KKK SCE SOY STD GRD 500ML",
+        "qty": 1,
+        "total": 18250,
+        "part": 0,
+        "confidence": 0.95
+      },
+      {
+        "name": "*PFS_MAGGI SCE OYSTR300ML",
+        "qty": 1,
+        "total": 7250,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "*CF10_KNORR SOUP CRABNCCO",
+        "qty": 2,
+        "total": 9800,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "*KC26_MCHIP CHIP NACHO 98",
+        "qty": 1,
+        "total": 2500,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "NSSIN NDL BFCUP 60GR/36",
+        "qty": 1,
+        "total": 3500,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "*CF10_JOLLY MSHRM P&S POU",
+        "qty": 2,
+        "total": 4100,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "NSSIN NDL PSTA CRBONARA60",
+        "qty": 4,
+        "total": 7000,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "STIKO WFER JR CHOWFR 380G",
+        "qty": 1,
+        "total": 9200,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "NSHIM NDL SHN RMYN 120GR",
+        "qty": 1,
+        "total": 26200,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "*CF10_RBSCO CRKR WHL WHT",
+        "qty": 1,
+        "total": 6800,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "DM SPSAU GRMT CRBONRA 200",
+        "qty": 2,
+        "total": 8700,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "*CF10_MNTOS CNDY PF SPRMI",
+        "qty": 1,
+        "total": 7600,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "DBMNT CNDY LMN CAN 23.8G/",
+        "qty": 1,
+        "total": 7500,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "CREAM FLR CORNSTRCH 200GR",
+        "qty": 1,
+        "total": 2700,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "MAYA FLR ALLPRPSE 800GR/1",
+        "qty": 1,
+        "total": 8900,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "MNSTR EDRINK UTRWHTE 355M",
+        "qty": 2,
+        "total": 17000,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "MILCU DEO SPORTS 80GR/12",
+        "qty": 1,
+        "total": 11400,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "NIVEA DEO MN INVSBL B&W50",
+        "qty": 1,
+        "total": 11450,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "*CF10_GDNIA LOAF WHT CL 4",
+        "qty": 1,
+        "total": 6425,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "*KC26_JCLBE CHIP HNY BUTT",
+        "qty": 1,
+        "total": 5000,
+        "part": 0,
+        "confidence": 0.95,
+        "merged": true
+      },
+      {
+        "name": "NSCFE RTDCF MOCHA 180ML/2",
+        "qty": 2,
+        "total": 6000,
+        "part": 1,
+        "confidence": 0.9
+      }
+    ],
+    "total": 208775,
+    "source": "gemini"
+  },
+  "validation": {
+    "itemsTotal": 208775,
+    "expectedTotal": 208775,
+    "gap": 0,
+    "ok": true,
+    "paidProductRows": 23,
+    "paidUnits": 31,
+    "overlappingRowsMerged": 19
+  }
+}

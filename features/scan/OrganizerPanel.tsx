@@ -22,6 +22,7 @@ interface Item {
   id: string;
   name: string;
   qty: number;
+  shareCount?: number | null;
   total: number;
   unclaimed: boolean;
 }
@@ -75,7 +76,7 @@ export function OrganizerPanel({
     ) : null;
   }
 
-  const unclaimed = items.filter((i) => i.unclaimed);
+  const unclaimed = items.filter((i) => i.unclaimed && i.shareCount == null);
   return (
     <div className="card flex flex-col gap-5">
       <h3 className="display m-0 text-lg font-bold">For you, as the person who made the list</h3>
@@ -124,8 +125,13 @@ export function OrganizerPanel({
               ) : (
                 <div className="flex min-h-11 items-center gap-2">
                   <span className="flex-1 text-[15px]">
-                    {item.qty > 1 ? `${item.qty}× ` : ""}
+                    {item.shareCount == null && item.qty > 1 ? `${item.qty}× ` : ""}
                     {item.name}
+                    {item.shareCount != null && (
+                      <span className="block text-[13px] font-normal text-muted-light">
+                        Shared by {item.shareCount} {item.shareCount === 1 ? "person" : "people"}
+                      </span>
+                    )}
                   </span>
                   <span className="money text-sm">{formatMoney(item.total, currency)}</span>
                   <button
@@ -215,14 +221,20 @@ function ItemEditor({
         required
         className="input"
       />
-      <div className="grid max-w-[320px] grid-cols-[56px_minmax(0,1fr)] gap-2">
-        <input
-          name="qty"
-          aria-label="Quantity"
-          defaultValue={item?.qty ?? 1}
-          inputMode="numeric"
-          className="input money px-2 text-center"
-        />
+      <div
+        className={`grid max-w-[320px] gap-2 ${item && item.shareCount == null ? "grid-cols-[56px_minmax(0,1fr)]" : "grid-cols-1"}`}
+      >
+        {item && item.shareCount == null ? (
+          <input
+            name="qty"
+            aria-label="Quantity"
+            defaultValue={item?.qty ?? 1}
+            inputMode="numeric"
+            className="input money px-2 text-center"
+          />
+        ) : (
+          <input type="hidden" name="qty" value={item?.qty ?? 1} />
+        )}
         <input
           name="total"
           aria-label="Line total"
@@ -232,6 +244,21 @@ function ItemEditor({
           className="input money px-2 text-right"
         />
       </div>
+      {(!item || item.shareCount != null) && (
+        <label className="field">
+          People sharing
+          <input
+            name="shareCount"
+            type="number"
+            min={1}
+            max={99}
+            step={1}
+            required
+            defaultValue={item?.shareCount ?? 1}
+            className="input money"
+          />
+        </label>
+      )}
       <div className="flex items-center gap-2">
         <button type="submit" className="btn-ink" disabled={pending}>
           Save
