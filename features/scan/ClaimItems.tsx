@@ -70,7 +70,7 @@ export function ClaimItems({
       setOptimistic({ id, qty });
       const result = await setClaim(billToken, id, qty);
       if (!result.ok) setError(result.error);
-      else router.refresh();
+      // setClaim returns refreshed server data in the same response.
     });
   }
 

@@ -33,7 +33,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    // The landing's inline skip script sets data-intro on <html> before hydration.
+    // The landing's client effect manages data-intro on <html>.
     <html
       lang="en"
       className={`${bricolage.variable} ${geist.variable} antialiased`}

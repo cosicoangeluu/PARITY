@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { readReceipt } from "@/adapters/receipt";
 import { parseAmount } from "@/core/money";
@@ -16,6 +17,7 @@ import {
   grantOrganizer,
   hashKey,
   loadGroupContext,
+  loadItemSelectionContext,
   logActivity,
   newToken,
   requireGroupContext,
@@ -275,20 +277,22 @@ export async function setClaim(
   qty: number,
 ): Promise<ActionResult> {
   return run(async () => {
-    const view = await billFor(billToken);
-    requireMe(view.ctx);
-    if (view.bill.status !== "claiming")
-      throw new AccessError("This bill is closed. Ask the organizer to change it.");
-    const item = view.items.find((i) => i.id === itemId);
-    if (!item) throw new AccessError("That item isn't on this bill.");
+    const { ctx, bill, item } = await loadItemSelectionContext(billToken, itemId);
     const units = qty;
-    await selectItemSpot(view.ctx, view.bill.id, itemId, units);
-    await logActivity(view.ctx, units ? "claim.ticked" : "claim.unticked", {
-      billId: view.bill.id,
+    await selectItemSpot(ctx, bill.id, itemId, units);
+    await logActivity(ctx, units ? "claim.ticked" : "claim.unticked", {
+      billId: bill.id,
       item: item.name,
       qty: units,
     });
-    await touched(view);
+    // Notifications must not hold up the saved selection's response.
+    after(async () => {
+      await Promise.all([
+        broadcastChange(`b:${bill.token}`),
+        broadcastChange(`g:${ctx.group.token}`),
+      ]);
+    });
+    refresh();
   });
 }
 

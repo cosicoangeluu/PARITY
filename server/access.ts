@@ -226,6 +226,37 @@ export async function createItemList(
   return token;
 }
 
+/** Selection needs access and one item, not the full bill/payment computation. */
+export async function loadItemSelectionContext(token: string, itemId: string) {
+  if (!/^[A-Za-z0-9_-]{16,64}$/.test(token))
+    throw new AccessError("This bill link isn't valid anymore.");
+  const bill = must(
+    await db()
+      .from("bills")
+      .select("id, group_id, token, status")
+      .eq("token", token)
+      .maybeSingle<Pick<BillRow, "id" | "group_id" | "token" | "status">>(),
+    "Load selection list",
+  );
+  if (!bill) throw new AccessError("This bill link isn't valid anymore.");
+  const [ctx, itemResult] = await Promise.all([
+    loadGroupContextById(bill.group_id),
+    db()
+      .from("bill_items")
+      .select("name")
+      .eq("bill_id", bill.id)
+      .eq("id", itemId)
+      .maybeSingle<{ name: string }>(),
+  ]);
+  requireMe(ctx);
+  requireUnlocked(ctx);
+  if (bill.status !== "claiming")
+    throw new AccessError("This bill is closed. Ask the organizer to change it.");
+  const item = must(itemResult, "Load selection item");
+  if (!item) throw new AccessError("That item isn't on this bill.");
+  return { ctx, bill, item };
+}
+
 export async function selectItemSpot(
   ctx: GroupContext,
   billId: string,

@@ -1,18 +1,29 @@
+"use client";
+
+import { useLayoutEffect, useRef } from "react";
 import { Mark } from "@/ui/brand/Mark";
 import { Grain } from "@/ui/Grain";
 
-/** Plays once per browser session and is skipped with reduced motion. */
-const SKIP_SCRIPT = `try{var k='parity_intro_seen';if(sessionStorage.getItem(k)||matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.dataset.intro='skip'}else{sessionStorage.setItem(k,'1')}}catch(e){}`;
-
 /** 0–2.6 s: paper, the mark grows from a dot, P A R I T Y fades in, the bars level out. */
 export function IntroSequence() {
+  const initialized = useRef(false);
+
+  useLayoutEffect(() => {
+    // Strict Mode replays effects; it must not skip the first visit's animation.
+    if (initialized.current) return;
+    initialized.current = true;
+    let skip = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    try {
+      skip = skip || sessionStorage.getItem("parity_intro_seen") !== null;
+      sessionStorage.setItem("parity_intro_seen", "1");
+    } catch {
+      // The intro still works when browser storage is unavailable.
+    }
+    document.documentElement.dataset.intro = skip ? "skip" : "play";
+  }, []);
+
   return (
     <>
-      <script
-        type={typeof window === "undefined" ? "text/javascript" : "text/plain"}
-        suppressHydrationWarning
-        dangerouslySetInnerHTML={{ __html: SKIP_SCRIPT }}
-      />
       <Grain id="paper-grain" opacity={0.35} blend="multiply" frequency={0.85} />
       <div className="intro" aria-hidden="true">
         <Mark size={80} className="intro-mark" barClassNames={["intro-bar-a", "intro-bar-b"]} />
